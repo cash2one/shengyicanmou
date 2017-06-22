@@ -39,7 +39,8 @@ class Sycm(object):
         # url = 'https://sycm.taobao.com'
         login_url = 'https://login.taobao.com/member/login.jhtml?from=sycm&full_redirect=true&style=minisimple&minititle=&minipara=0,0,0&sub=true&redirect_url=http://sycm.taobao.com/'
         driver = webdriver.Chrome(
-            executable_path="E:/Program Files (x86)/chromedriver"
+            # executable_path="E:/Program Files (x86)/chromedriver"
+            executable_path="C:/Program Files (x86)/Google/Chrome/Application/chromedriver"
             )
         driver.maximize_window()
         driver.get(login_url)

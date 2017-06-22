@@ -1,7 +1,10 @@
 import os
+from utils import get_user_agent
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 HEADERS = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36",
+            "User-Agent": get_user_agent(),
             "Accept-encoding": "gzip",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Encoding": "gzip, deflate, sdch, br",
@@ -10,7 +13,12 @@ HEADERS = {
             "Connection": "keep-alive",
             }
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROXY_SITES = []
+
+REFERER_LIST = [
+    'https://www.google.com/',
+    'https://www.baidu.com/',
+]
 
 LOGGING = {
     'version': 1,
