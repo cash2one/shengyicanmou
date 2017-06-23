@@ -1,10 +1,18 @@
 import os
+import random
+
 from utils import get_user_agent
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+REFERER_LIST = [
+    'https://www.google.com/',
+    'https://www.baidu.com/',
+]
+
 HEADERS = {
             "User-Agent": get_user_agent(),
+            "Referer" : random.choice(REFERER_LIST),
             "Accept-encoding": "gzip",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Encoding": "gzip, deflate, sdch, br",
@@ -15,10 +23,7 @@ HEADERS = {
 
 PROXY_SITES = []
 
-REFERER_LIST = [
-    'https://www.google.com/',
-    'https://www.baidu.com/',
-]
+
 
 LOGGING = {
     'version': 1,
