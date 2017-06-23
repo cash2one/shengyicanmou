@@ -5,6 +5,10 @@ from utils import get_user_agent
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+MYSQL_DBNAME = 'sycm'
+MYSQL_USER = 'root'
+MYSQL_PASSWD = ''
+
 REFERER_LIST = [
     'https://www.google.com/',
     'https://www.baidu.com/',
