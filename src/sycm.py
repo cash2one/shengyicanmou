@@ -86,48 +86,24 @@ class Sycm(object):
             Boolean: 是否登陆成功
         """
         res = self.session.get(self.data_url, headers=HEADERS, verify=False)
-        # import pdb
-        # pdb.set_trace()
         text = res.text
         login_key = re.findall(r'title="登出"', text)
         if login_key:
             return True
         else:
             return False
-
-    def crawl_industry_data(self, driver=None):
-        '''
-        抓取 市场->产品分析 表格数据
-        '''
-        product_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm'
-        if driver:
-            driver.get(product_url)
-        else:
-            driver = webdriver.Chrome(
-                executable_path="E:/Program Files (x86)/chromedriver"
-                # executable_path="C:/Program Files (x86)/Google/Chrome/Application/chromedriver"
-            )
-            driver.maximize_window()
-            driver.get(product_url)
-            driver.add_cookie(self._get_login_cookies())    # 增加保存到本地的cookies，实现带cookies登录
-            
-        time.sleep(10)
-        import pdb
-        pdb.set_trace()
-        page_source = driver.page_source.encode('utf-8')
+    
+    def analysis_industry_html(self, page_source):
         html = etree.HTML(page_source)
-        #获取总页数
-        total_page = html.xpath('//span[@class="ui-pagination-total"]/text()')
-        total_page = int(total_page[1])
         #获取表格数据 
         table = html.xpath('//div[@class="list-table-container"]/table')[0]
-        # 表头: 排名 产品名称 交易指数 支付件数 操作
-        threads = table.xpath('./thead/tr/th')
-        # thread_length = len(thread)
-        th_text = []
-        for th in threads:
-            th_text.append(th.xpath('./div/span/text()')[0])
-        logger.debug(th_text)
+        # # 表头: 排名 产品名称 交易指数 支付件数 操作
+        # threads = table.xpath('./thead/tr/th')
+        # # thread_length = len(thread)
+        # th_text = []
+        # for th in threads:
+        #     th_text.append(th.xpath('./div/span/text()')[0])
+        # logger.debug(th_text)
         # 表体
         tbodys = table.xpath('./tbody/tr')
         # tbody_length = len(tbody)
@@ -147,6 +123,49 @@ class Sycm(object):
             operation = ''.join(tr.xpath('./td[5]/div/a/text()'))
             logger.debug('排名：{}，产品名称：{}， 交易指数：{}， 支付件数：{}， 操作：{}'
                         .format(ranking, product, sale_index, sales, operation))
+
+    def get_industry_total_pages(self, driver):
+        per_100_first_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm?spm=a21ag.7782695.LeftMenu.d320.mfz2ZP&page=1&pageSize=50#/?cateId=50023717&dateRange=2017-06-22%7C2017-06-22&dateType=recent1&device=0&orderBy=tradeIndex&orderType=desc&page=1&pageSize=100&seller=-1'
+        driver.get(per_100_first_url)
+        time.sleep(5)
+
+        page_source = driver.page_source.encode('utf-8')
+        html = etree.HTML(page_source)
+        #获取总页数
+        total_page = html.xpath('//span[@class="ui-pagination-total"]/text()')
+        total_page = int(total_page[1])
+        logger.debug('产品分析页数据总页数:{}'.format(total_page))
+        return total_page
+
+    def crawl_industry_data(self, driver=None):
+        '''
+        抓取 市场->产品分析 表格数据
+        '''
+        product_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm'
+        if driver:
+            driver.get(product_url)
+        else:
+            driver = webdriver.Chrome(
+                executable_path="E:/Program Files (x86)/chromedriver"
+                # executable_path="C:/Program Files (x86)/Google/Chrome/Application/chromedriver"
+            )
+            driver.maximize_window()
+            driver.get(product_url)
+            driver.add_cookie(self._get_login_cookies())    # 增加保存到本地的cookies，实现带cookies登录
+            
+        time.sleep(10)
+        # import pdb
+        # pdb.set_trace()
+        total_page = self.get_industry_total_pages(driver) + 1
+        for page in range(1, total_page):
+            per_100_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm?spm=a21ag.7782695.LeftMenu.d320.mfz2ZP&page=1&pageSize=50#/?cateId=50023717&dateRange=2017-06-22%7C2017-06-22&dateType=recent1&device=0&orderBy=tradeIndex&orderType=desc&page={}&pageSize=100&seller=-1'\
+                        .format(page)
+            driver.get(per_100_url)
+            page_source = driver.page_source.encode('utf-8')
+            logger.debug('开始获取第{}页数据'.format(page)+'-'*20)
+            self.analysis_industry_html(page_source)
+            continue
+
 
 if __name__ == '__main__':
     username = '健客大药房旗舰店:运营04'
