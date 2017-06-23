@@ -1,0 +1,35 @@
+浏览器人工操作：
+登录后跳转的页面： https://sycm.taobao.com/portal/home.htm
+
+市场：https://sycm.taobao.com/mq/live/live.htm
+|
+产品分析： https://sycm.taobao.com/mq/industry/product/rank.htm
+市场——》产品分析： 
+
+https://sycm.taobao.com/mq/industry/product/rank.htm?spm=a21ag.7782695.LeftMenu.d320.mfz2ZP&page=1&pageSize=50#/?cateId=50023717&dateRange=2017-06-22%7C2017-06-22&dateType=recent1&device=0&orderBy=tradeIndex&orderType=desc&page=2&pageSize=100&seller=-1
+
+
+
+商品店铺榜：
+https://sycm.taobao.com/mq/industry/rank/industry.htm?spm=a21ag.7782686.LeftMenu.d342.iIJ9g1#/?cateId=50023717&dateRange=2017-06-22%7C2017-06-22&dateType=recent1&device=0&seller=-1
+
+https://sycm.taobao.com/mq/industry/rank/industry.htm?spm=a21ag.7782686.LeftMenu.d342.iIJ9g1#/?cateId=50023717&dateRange=2017-06-22%7C2017-06-22&dateType=recent1&device=0&seller=-1
+
+商品店铺榜  表格数据来源（该json返回值中不包括 “查看货源”  的URL）：
+https://sycm.taobao.com/mq/rank/listItems.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page=1&pageSize=20&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142
+
+
+查看货源  仅itemId=541299023004 值（该值可以通过 上述json表获得）不同：
+
+https://sycm.taobao.com/mq/industry/rank/industry.htm?spm=a21ag.7782686.LeftMenu.d342.iIJ9g1#/?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre=2017-06-22%7C2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&itemId=43751299764&rankTabIndex=0&rankType=1&seller=-1&view=detail
+
+点击URL后：
+
+对于商品趋势的折线图：
+Request URL:
+https://sycm.taobao.com/mq/rank/listItemTrend.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&indexes=payOrdCnt,payByrRateIndex,payItemQty&itemDetailType=1&itemId=43751299764&latitude=undefined&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=detail&_=1498208479779
+
+其返回值中可获得： 
+所有终端-支付子订单数  "payOrdCntList"
+所有终端-支付转化率指数  "payByrRateIndexList"
+所有终端-支付件数  "payItemQtyList"

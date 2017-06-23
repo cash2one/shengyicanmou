@@ -1,0 +1,46 @@
+创建Python3的虚拟环境：
+
+sudo apt-get install python3-pip
+
+
+sudo python3 -m pip install virtualenv  virtualenvwrapper
+
+source /usr/local/bin/virtualenvwrapper.sh
+
+mkvirtualenv python3_spider --python=/usr/bin/python3
+
+
+验证是否创建成功：
+
+(python3) lily@qing-bj:~$ python --version
+Python 3.4.3
+
+
+创建Python2的虚拟环境：
+$ sudo pip install virtualenv
+
+$ sudo pip install virtualenvwrapper
+安装完成后，会在/usr/local/bin/virtualenvwrapper.sh  生成virtualwrapper的shell脚本。
+在使用virtualenvwrapper时，需要配置登录的shell初始化脚本，将virtualenvwrapper.sh的信息读入当前的shell环境。这里以base为例，通过对用户根目录下（即/home/[username]）的.bashrc配置文件进入如下修改即可。修改.bashrc:
+if [ -f /usr/bin/virtualenvwrapper.sh ]; then
+    export WORKON_HOME=$HOME/.virtualenvs
+    source /usr/bin/virtualenvwrapper.sh
+fi
+
+再次读入.bashrc:   $source~/.bashrc
+
+$ mkvirtualenv my_project_venv
+
+$ workon my_project_venv
+
+$ deactivate
+
+$ rmvirtualenv my_project_venv
+
+
+
+删除和复制虚拟环境：
+
+cpvirtualenv oldenv newenv
+（注意，如果是复制的虚拟环境，newenv环境下安装的包也会安装到oldenv中，因为在newenv环境下Python是oldenv的链接）
+rmvirtualenv oldenv

@@ -1,0 +1,13 @@
+Ctrl-W Ctrl-W 同一个屏幕中两个文件间切换
+
+C-W N/P 是 下一个/上一个
+
+
+vsplit 窗口分隔后，用vim内部启动对比的方法为   :e main.c
+
+用分割形式新建文件" :new"
+
+在终端下使用的,就是一次性打开3个文件并使用分割形式显示。vim -o one.txt two.txt three.txt
+
+
+多个标签间进行切换时向右切换gt，向左切换用gT  在vim 中多标签间切换
