@@ -13,6 +13,7 @@ import requests
 from selenium import webdriver
 
 from settings import LOGGING, HEADERS
+from pipelines import Sycm
 
 logging.config.dictConfig(LOGGING)
 logger = logging.getLogger('myspider')
@@ -23,19 +24,20 @@ class Sycm(object):
         self.data_url = 'https://sycm.taobao.com/mq/industry/product/detail.htm?spm=a21ag.7782686.0.0.c8PRca#/?brandId=3228590&cateId=50023717&dateRange=2017-06-21%7C2017-06-21&dateType=recent1&device=0&modelId=277847275&seller=-1&spuId=277847275'
         self.username = username
         self.passwd = passwd
+        self.db = Sycm()
         self.session = requests.Session()
-        self._login(username, passwd)
+        # self._login(username, passwd)
 
-        # self._get_login_cookies()
-        # if self._check_login():            
-        #     logger.debug('from cache...cookies...,login success')
-        #     # self.crawl_industry_data()
-        #     self.crawl_list_item_trend()
-        # else:
-        #     # 防止cookie过期失效
-        #     self.session.cookies.clear()
-        #     self._login(username, passwd)
-        #     self.crawl_list_item_trend()
+        self._get_login_cookies()
+        if self._check_login():            
+            logger.debug('from cache...cookies...,login success')
+            # self.crawl_industry_data()
+            self.crawl_list_item_trend()
+        else:
+            # 防止cookie过期失效
+            self.session.cookies.clear()
+            self._login(username, passwd)
+            self.crawl_list_item_trend()
 
     def _login(self, username, passwd):
         # url = 'https://sycm.taobao.com'
@@ -111,6 +113,7 @@ class Sycm(object):
         # tbody_length = len(tbody)
         td_text = []
         for tr in tbodys:
+            
             # tds = tr.xpath('./td')
             # td_length = len(tds)
             # 排名
@@ -125,6 +128,16 @@ class Sycm(object):
             operation = ''.join(tr.xpath('./td[5]/div/a/text()'))
             logger.debug('排名：{}，产品名称：{}， 交易指数：{}， 支付件数：{}， 操作：{}'
                         .format(ranking, product, sale_index, sales, operation))
+            product_info = {
+                'rangking':ranking,
+                'product': product,
+                'sale_index': sale_index,
+                'sales': sales,
+                'operation':  operation
+            }
+            td_text.append(product_info)
+        self.db.save_industry_product(td_text)
+        
 
     def get_industry_total_pages(self, driver):
         per_100_first_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm?spm=a21ag.7782695.LeftMenu.d320.mfz2ZP&page=1&pageSize=50#/?cateId=50023717&dateRange=2017-06-22%7C2017-06-22&dateType=recent1&device=0&orderBy=tradeIndex&orderType=desc&page=1&pageSize=100&seller=-1'
