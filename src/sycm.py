@@ -24,17 +24,19 @@ class Sycm(object):
         self.username = username
         self.passwd = passwd
         self.session = requests.Session()
-        self._login(username, passwd)
+        # self._login(username, passwd)
+        
 
-        # self._get_login_cookies()
-        # if self._check_login():            
-        #     logger.debug('from cache...cookies...,login success')
-        #     self.crawl_industry_data()
-        # else:
-        #     # 防止cookie过期失效
-        #     self.session.cookies.clear()
-        #     self._login(username, passwd)
-        #     self.crawl_data()
+        self._get_login_cookies()
+        if self._check_login():            
+            logger.debug('from cache...cookies...,login success')
+            # self.crawl_industry_data()
+            self.crawl_list_item_trend()
+        else:
+            # 防止cookie过期失效
+            self.session.cookies.clear()
+            self._login(username, passwd)
+            self.crawl_list_item_trend()
 
     def _login(self, username, passwd):
         # url = 'https://sycm.taobao.com'
@@ -164,8 +166,39 @@ class Sycm(object):
             page_source = driver.page_source.encode('utf-8')
             logger.debug('开始获取第{}页数据'.format(page)+'-'*20)
             self.analysis_industry_html(page_source)
-            continue
-
+          
+    
+    def crawl_list_item_trend(self):
+        '''
+        抓取 市场->市场店铺榜->查看详情->商品趋势 数据
+            所有终端-支付子订单数  "payOrdCntList"
+            所有终端-支付转化率指数  "payByrRateIndexList"
+            所有终端-支付件数  "payItemQtyList"
+        '''
+        # import pdb
+        # pdb.set_trace()
+        # 获得 商品信息(itemTitle)、商品id(itemId)
+        list_items_url = 'https://sycm.taobao.com/mq/rank/listItems.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page=1&pageSize=100&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142'
+        res = self.session.get(url=list_items_url, headers=HEADERS, verify=False)
+        list_items = json.loads(res.text)
+        total_items_count = list_items['content']['data']['recordCount']
+        total_page = int(total_items_count/100)
+        total_items_data = list_items['content']['data']['data']
+        for item in total_items_data:
+            #item keys: ['payByrRateIndex', 'mallItem', 'itemUrl', 'itemPicUrl', 'sameGoodUrl', 'itemPrice', 'payOrdCnt', 'itemId', 'shopUrl', 'pvIndex', 'shopName', 'tradeIndexCrc', 'searchIndex', 'orderNum', 'itemTitle']
+            item_title = item['itemTitle']
+            item_id = item['itemId']
+            # 构造 商品趋势的折线图 的URL
+            item_tred_url = 'https://sycm.taobao.com/mq/rank/listItemTrend.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&indexes=payOrdCnt,payByrRateIndex,payItemQty&itemDetailType=1&itemId={item_id}&latitude=undefined&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=detail'\
+                            .format(item_id=item_id)
+            tred_res = self.session.get(url=item_tred_url, headers=HEADERS, verify=False)
+            tred_items = json.loads(tred_res.text)
+            pay_item_qtylist = tred_items['content']['data']['payItemQtyList']
+            pay_ord_cntlist = tred_items['content']['data']['payOrdCntList']
+            pay_byr_rate_index_list = tred_items['content']['data']['payByrRateIndexList']
+            logger.debug('所有终端-支付子订单数:{}, 所有终端-支付转化率指数:{}, 所有终端-支付件数:{}'
+                        .format(pay_ord_cntlist, pay_byr_rate_index_list, pay_item_qtylist))
+           
 
 if __name__ == '__main__':
     username = '健客大药房旗舰店:运营04'
