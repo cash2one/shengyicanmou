@@ -24,6 +24,7 @@ class Sycm(object):
         self.data_url = 'https://sycm.taobao.com/mq/industry/product/detail.htm?spm=a21ag.7782686.0.0.c8PRca#/?brandId=3228590&cateId=50023717&dateRange=2017-06-21%7C2017-06-21&dateType=recent1&device=0&modelId=277847275&seller=-1&spuId=277847275'
         self.username = username
         self.passwd = passwd
+        self.failed_count = 0
         # self.db = Sycm()
         self.session = requests.Session()
         # self._login(username, passwd)
@@ -49,7 +50,8 @@ class Sycm(object):
         driver = webdriver.PhantomJS()
         driver.maximize_window()
         driver.get(login_url)
-    
+        import pdb
+        pdb.set_trace()
         logger.debug("start login")
         username_field  = driver.find_element_by_id("TPL_username_1")
         username_field.send_keys(self.username)
@@ -59,10 +61,15 @@ class Sycm(object):
         login_button.click()
         time.sleep(20)
         
+        if self._check_login():
+            logger.debug("login success")
+        else:
+            self.failed_count += 1
+            logger.debug("login {} failed, try login".format(self.failed_count))
+            self._login(username, passwd)
         cookies = driver.get_cookies()
         login_cookies = {item["name"] : item["value"] for item in cookies}
         self._save_login_cookies(login_cookies)
-        logger.debug("login success")
 
         # 点击市场
         self.crawl_industry_data(driver=driver)
@@ -138,7 +145,6 @@ class Sycm(object):
             td_text.append(product_info)
         # self.db.save_industry_product(td_text)
         
-
     def get_industry_total_pages(self, driver):
         per_100_first_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm?spm=a21ag.7782695.LeftMenu.d320.mfz2ZP&page=1&pageSize=50#/?cateId=50023717&dateRange=2017-06-22%7C2017-06-22&dateType=recent1&device=0&orderBy=tradeIndex&orderType=desc&page=1&pageSize=100&seller=-1'
         driver.get(per_100_first_url)
@@ -156,22 +162,17 @@ class Sycm(object):
         '''
         抓取 市场->产品分析 表格数据
         '''
+        import pdb
+        pdb.set_trace()
         product_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm'
         if driver:
             driver.get(product_url)
         else:
-            # driver = webdriver.Chrome(
-            #     executable_path="E:/Program Files (x86)/chromedriver"
-            #     # executable_path="C:/Program Files (x86)/Google/Chrome/Application/chromedriver"
-            # )
             driver = webdriver.PhantomJS()
-            driver.maximize_window()
             driver.get(product_url)
             driver.add_cookie(self._get_login_cookies())    # 增加保存到本地的cookies，实现带cookies登录
             
         time.sleep(10)
-        # import pdb
-        # pdb.set_trace()
         total_page = self.get_industry_total_pages(driver) + 1
         for page in range(1, total_page):
             per_100_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm?spm=a21ag.7782695.LeftMenu.d320.mfz2ZP&page=1&pageSize=50#/?cateId=50023717&dateRange=2017-06-22%7C2017-06-22&dateType=recent1&device=0&orderBy=tradeIndex&orderType=desc&page={}&pageSize=100&seller=-1'\
