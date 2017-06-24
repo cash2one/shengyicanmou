@@ -11,6 +11,7 @@ import logging.config
 from lxml import etree
 import requests
 from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
 
 from settings import LOGGING, HEADERS
 from pipelines import Sycm
@@ -27,18 +28,18 @@ class Sycm(object):
         self.failed_count = 0
         # self.db = Sycm()
         self.session = requests.Session()
-        # self._login(username, passwd)
+        self._login(username, passwd)
 
-        self._get_login_cookies()
-        if self._check_login():            
-            logger.debug('from cache...cookies...,login success')
-            # self.crawl_industry_data()
-            self.crawl_list_item_trend()
-        else:
-            # 防止cookie过期失效
-            self.session.cookies.clear()
-            self._login(username, passwd)
-            self.crawl_list_item_trend()
+        # self._get_login_cookies()
+        # if self._check_login():            
+        #     logger.debug('from cache...cookies...,login success')
+        #     # self.crawl_industry_data()
+        #     self.crawl_list_item_trend()
+        # else:
+        #     # 防止cookie过期失效
+        #     self.session.cookies.clear()
+        #     self._login(username, passwd)
+        #     self.crawl_list_item_trend()
 
     def _login(self, username, passwd):
         # url = 'https://sycm.taobao.com'
@@ -50,8 +51,8 @@ class Sycm(object):
         driver = webdriver.PhantomJS()
         driver.maximize_window()
         driver.get(login_url)
-        import pdb
-        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
         logger.debug("start login")
         username_field  = driver.find_element_by_id("TPL_username_1")
         username_field.send_keys(self.username)
@@ -61,12 +62,12 @@ class Sycm(object):
         login_button.click()
         time.sleep(20)
         
-        if self._check_login():
-            logger.debug("login success")
-        else:
-            self.failed_count += 1
-            logger.debug("login {} failed, try login".format(self.failed_count))
-            self._login(username, passwd)
+        # if self._check_login():
+        #     logger.debug("login success")
+        # else:
+        #     self.failed_count += 1
+        #     logger.debug("login {} failed, try login".format(self.failed_count))
+        #     self._login(username, passwd)
         cookies = driver.get_cookies()
         login_cookies = {item["name"] : item["value"] for item in cookies}
         self._save_login_cookies(login_cookies)
@@ -162,8 +163,7 @@ class Sycm(object):
         '''
         抓取 市场->产品分析 表格数据
         '''
-        import pdb
-        pdb.set_trace()
+    
         product_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm'
         if driver:
             driver.get(product_url)

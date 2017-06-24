@@ -1,6 +1,6 @@
 import datetime
 
-from MySQLdb import *                                              
+# from MySQLdb import *                                              
 from peewee import *
 
 from settings import MYSQL_DBNAME, MYSQL_USER, MYSQL_PASSWD
