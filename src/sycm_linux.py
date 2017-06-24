@@ -51,8 +51,8 @@ class Sycm(object):
         driver = webdriver.PhantomJS()
         driver.maximize_window()
         driver.get(login_url)
-        # import pdb
-        # pdb.set_trace()
+        import pdb
+        pdb.set_trace()
         logger.debug("start login")
         username_field  = driver.find_element_by_id("TPL_username_1")
         username_field.send_keys(self.username)
@@ -61,6 +61,7 @@ class Sycm(object):
         login_button = driver.find_element_by_id("J_SubmitStatic")
         login_button.click()
         time.sleep(20)
+        
         
         # if self._check_login():
         #     logger.debug("login success")
