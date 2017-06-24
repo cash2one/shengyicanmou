@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 MYSQL_DBNAME = 'shengyicanmou'
 MYSQL_USER = 'root'
-MYSQL_PASSWD = ''
+MYSQL_PASSWD = 'root.123'
 
 REFERER_LIST = [
     'https://www.google.com/',
@@ -65,7 +65,7 @@ LOGGING = {
         'ocr': {
             'level':'DEBUG',
             'class':'logging.handlers.RotatingFileHandler',
-            'filename':BASE_DIR + '/log/ocr.log',
+            'filename':BASE_DIR + '/log/data.log',
             'maxBytes': 1024*1024*5,
             # 'backupCount': 5,
             'formatter':'standard',
@@ -73,7 +73,7 @@ LOGGING = {
         'ocr_error': {
             'level':'ERROR',
             'class':'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR + '/log/ocr_error.log',
+            'filename': BASE_DIR + '/log/data_error.log',
             'maxBytes':1024*1024*5,
             # 'backupCount': 5,
             'formatter':'standard',
@@ -81,7 +81,7 @@ LOGGING = {
     },
     # 记录器
     'loggers': {
-        'myocr': {
+        'mydata': {
             'handlers': ['console', 'ocr', 'ocr_error'],
             'level': 'DEBUG',  #级别最低
             'propagate': True

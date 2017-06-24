@@ -1,7 +1,15 @@
 # coding:utf-8
 
+import datetime
+import logging
+import logging.config
+
 from models import IndustryProduct, ListItemTrend, \
         ListItem
+from settings import LOGGING
+
+logging.config.dictConfig(LOGGING)
+logger = logging.getLogger('mydata')
 
 def before_request_handler():
     if not IndustryProduct.table_exists():
@@ -11,7 +19,7 @@ def before_request_handler():
     if not ListItemTrend.table_exists():
         ListItemTrend.create_table()
 
-class Sycm(object):
+class SycmData(object):
 
     def __init__(self):
         before_request_handler()
@@ -23,29 +31,32 @@ class Sycm(object):
             for item in items:
                 ranking = item['ranking']
                 product = item['product']
+                sycm_product_url = item['sycm_product_url']
                 sale_index = item['sale_index']
                 sales = item['sales']
                 operation = item['operation']
-                logger.debug('\033[92m product:{0}, sales:{1} \033[0m'
-                    .format(product.encode('utf-8'), sales.encode('utf-8')))
+                update_date = datetime.date.today()
+                logger.debug('\033[92m 保存产品分析的数据: product:{0}, ranking:{1} \033[0m'
+                    .format(product, ranking))
                 try:
                     industry_product, created = IndustryProduct.get_or_create(
-                        product=product,
+                        product = product,
+                        update_date = update_date,
+                        sale_index = sale_index,
                         defaults = {
-                            'sale_index': sale_index,
                             'ranking': ranking,
                             'sales': sales,
-                            'operation': operation
+                            'operation': operation,
+                            'sycm_product_url': sycm_product_url
                             },
                         )
                     if not created:
-                        industry_product.sale_index = sale_index
                         industry_product.ranking = ranking
                         industry_product.sales = sales
                         industry_product.operation = operation
+                        industry_product.sycm_product_url = sycm_product_url
                         #import pdb
                         #pdb.set_trace()
                         industry_product.save()
                 except Exception as e:
                     logger.error(e)
-        return item

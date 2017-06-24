@@ -7,9 +7,6 @@ from settings import MYSQL_DBNAME, MYSQL_USER, MYSQL_PASSWD
 
 mysql_db = MySQLDatabase(MYSQL_DBNAME, user=MYSQL_USER, passwd=MYSQL_PASSWD)
 
-def convert_to_date():
-    return datetime.date.today().strftime('%Y-%m-%d')
-
 class BaseModel(Model):
     """A base model that will use our MySQL database"""
     class Meta:
@@ -25,11 +22,26 @@ class IndustryProduct(BaseModel):
     sale_index = CharField()
     sales = CharField()
     operation = CharField()
+    sycm_product_url = CharField()
+    update_date = CharField(default=datetime.date.today)
+
+    class Meta:
+        db_table = 'industry_product'
 
 
 class ListItem(BaseModel):
-    item_title = CharField(unique=True)
+    shop_name = CharField()
+    item_title = CharField()
     item_id = CharField()
+    item_price = CharField()
+    item_url = CharField()
+
+    class Meta:
+        db_table = 'list_item'
+         indexes = (
+             # Specify a unique multi-column index on 'item_title', 'item_id'.
+             (('item_title', 'item_id'), True),
+
 
 class ListItemTrend(BaseModel):
     '''
@@ -39,8 +51,10 @@ class ListItemTrend(BaseModel):
     pay_item_qtylist = CharField()
     pay_ord_cntlist = CharField()
     pay_byr_rate_index_list = CharField()
-    update_date = CharField(default=convert_to_date)
+    update_date = CharField(default=datetime.date.today)
 
+    class Meta:
+        db_table = 'list_item_trend'
     # class Meta:
     #     indexes = (
     #         # Specify a unique multi-column index on 'item_title', 'update_date'.

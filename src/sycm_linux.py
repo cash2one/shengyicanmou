@@ -2,6 +2,7 @@
 
 import os
 import time
+import datetime
 import pprint
 import json
 import re
@@ -14,7 +15,7 @@ from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 
 from settings import LOGGING, HEADERS
-from pipelines import Sycm
+from pipelines import SycmData
 
 logging.config.dictConfig(LOGGING)
 logger = logging.getLogger('myspider')
@@ -26,28 +27,24 @@ class Sycm(object):
         self.username = username
         self.passwd = passwd
         self.failed_count = 0
-        # self.db = Sycm()
+        self.db = SycmData()
         self.session = requests.Session()
-        self._login(username, passwd)
+        #self._login(username, passwd)
 
-        # self._get_login_cookies()
-        # if self._check_login():            
-        #     logger.debug('from cache...cookies...,login success')
-        #     # self.crawl_industry_data()
-        #     self.crawl_list_item_trend()
-        # else:
-        #     # 防止cookie过期失效
-        #     self.session.cookies.clear()
-        #     self._login(username, passwd)
-        #     self.crawl_list_item_trend()
+        self._get_login_cookies()
+        if self._check_login():            
+            logger.debug('from cache...cookies...,login success')
+            self.crawl_industry_data()
+            #self.crawl_list_item_trend()
+        else:
+            # 防止cookie过期失效
+            self.session.cookies.clear()
+            self._login(username, passwd)
+            self.crawl_list_item_trend()
 
     def _login(self, username, passwd):
         # url = 'https://sycm.taobao.com'
         login_url = 'https://login.taobao.com/member/login.jhtml?from=sycm&full_redirect=true&style=minisimple&minititle=&minipara=0,0,0&sub=true&redirect_url=http://sycm.taobao.com/'
-        # driver = webdriver.Chrome(
-        #     executable_path="E:/Program Files (x86)/chromedriver"
-        #     # executable_path="C:/Program Files (x86)/Google/Chrome/Application/chromedriver"
-        #     )
         driver = webdriver.PhantomJS()
         driver.maximize_window()
         driver.get(login_url)
@@ -121,13 +118,15 @@ class Sycm(object):
         # tbody_length = len(tbody)
         td_text = []
         for tr in tbodys:
-            
             # tds = tr.xpath('./td')
             # td_length = len(tds)
             # 排名
             ranking = tr.xpath('./td[1]/text()')[0]
             # 产品名称 
             product = ''.join(tr.xpath('./td[2]/a/span/text()'))
+            sycm_product_url = 'https'+ tr.xpath('./td[2]/a/@href')[0]
+            #import pdb
+            #pdb.set_trace()
             # 交易指数 
             sale_index = tr.xpath('./td[3]/text()')[0]
             # 支付件数 
@@ -137,16 +136,20 @@ class Sycm(object):
             logger.debug('排名：{}，产品名称：{}， 交易指数：{}， 支付件数：{}， 操作：{}'
                         .format(ranking, product, sale_index, sales, operation))
             product_info = {
-                'rangking':ranking,
+                'ranking':ranking,
                 'product': product,
+                'sycm_product_url': sycm_product_url,
                 'sale_index': sale_index,
                 'sales': sales,
                 'operation':  operation
             }
             td_text.append(product_info)
-        # self.db.save_industry_product(td_text)
+        self.db.save_industry_product(td_text)
         
     def get_industry_total_pages(self, driver):
+        '''
+        在每页展示数据条数为10条时
+        '''
         per_100_first_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm?spm=a21ag.7782695.LeftMenu.d320.mfz2ZP&page=1&pageSize=50#/?cateId=50023717&dateRange=2017-06-22%7C2017-06-22&dateType=recent1&device=0&orderBy=tradeIndex&orderType=desc&page=1&pageSize=100&seller=-1'
         driver.get(per_100_first_url)
         time.sleep(5)
@@ -159,6 +162,12 @@ class Sycm(object):
         logger.debug('产品分析页数据总页数:{}'.format(total_page))
         return total_page
 
+    def get_yesterday(self):
+        today=datetime.date.today()
+        oneday=datetime.timedelta(days=1)
+        yesterday=today-oneday 
+        return yesterday
+
     def crawl_industry_data(self, driver=None):
         '''
         抓取 市场->产品分析 表格数据
@@ -169,17 +178,20 @@ class Sycm(object):
             driver.get(product_url)
         else:
             driver = webdriver.PhantomJS()
-            driver.get(product_url)
             driver.add_cookie(self._get_login_cookies())    # 增加保存到本地的cookies，实现带cookies登录
+            driver.get(product_url)
             
         time.sleep(10)
-        total_page = self.get_industry_total_pages(driver) + 1
-        for page in range(1, total_page):
-            per_100_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm?spm=a21ag.7782695.LeftMenu.d320.mfz2ZP&page=1&pageSize=50#/?cateId=50023717&dateRange=2017-06-22%7C2017-06-22&dateType=recent1&device=0&orderBy=tradeIndex&orderType=desc&page={}&pageSize=100&seller=-1'\
-                        .format(page)
+        total_page = self.get_industry_total_pages(driver) 
+        per_100_total_page = int(total_page*10/100)+1
+        for page in range(1, per_100_total_page):
+            #import pdb
+            #pdb.set_trace()
+            per_100_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm?spm=a21ag.7782695.LeftMenu.d320.mfz2ZP&page=1&pageSize=50#/?cateId=50023717&dateRange={yesterday}%7C{yesterday}&dateType=recent1&device=0&orderBy=tradeIndex&orderType=desc&page={page}&pageSize=100&seller=-1'\
+                .format(yesterday=self.get_yesterday(),  page=page)
             driver.get(per_100_url)
-            page_source = driver.page_source.encode('utf-8')
-            logger.debug('开始获取第{}页数据'.format(page)+'-'*20)
+            page_source = driver.page_source
+            logger.debug('开始获取第{}页数据'.format(page)+'-'*40)
             self.analysis_industry_html(page_source)
           
     def get_list_item_total_page(self):
@@ -211,8 +223,17 @@ class Sycm(object):
             total_items_data = list_items['content']['data']['data']
             for item in total_items_data:
                 #item keys: ['payByrRateIndex', 'mallItem', 'itemUrl', 'itemPicUrl', 'sameGoodUrl', 'itemPrice', 'payOrdCnt', 'itemId', 'shopUrl', 'pvIndex', 'shopName', 'tradeIndexCrc', 'searchIndex', 'orderNum', 'itemTitle']
+                # 店名
+                shop_name = item['shopName']
+                # 产品名
                 item_title = item['itemTitle']
+                # 产品id
                 item_id = item['itemId']
+                # 产品价格
+                item_price = item['itemPrice']
+                # 产品url
+                item_url = item['itemUrl']
+
                 # 构造 商品趋势的折线图 的URL
                 item_tred_url = 'https://sycm.taobao.com/mq/rank/listItemTrend.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&indexes=payOrdCnt,payByrRateIndex,payItemQty&itemDetailType=1&itemId={item_id}&latitude=undefined&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=detail'\
                                 .format(item_id=item_id)
