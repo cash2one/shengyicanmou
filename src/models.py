@@ -55,8 +55,3 @@ class ListItemTrend(BaseModel):
 
     class Meta:
         db_table = 'list_item_trend'
-    # class Meta:
-    #     indexes = (
-    #         # Specify a unique multi-column index on 'item_title', 'update_date'.
-    #         (('item_title', 'update_date'), True),
-    #     )

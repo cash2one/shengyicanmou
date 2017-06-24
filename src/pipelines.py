@@ -60,3 +60,42 @@ class SycmData(object):
                         industry_product.save()
                 except Exception as e:
                     logger.error(e)
+
+    def save_list_item_trend(self, items):
+        if not isinstance(items, list):
+            return
+        else:
+            for item in items:
+                shop_name = item['shop_name']
+                item_title = item['item_title']
+                item_id = item['item_id']
+                item_price = item['item_price']
+                item_url = item['item_url']
+                logger.debug('\033[92m 保存商品店铺信息: shop_name:{0}, item_title:{1} \033[0m'
+                    .format(shop_name, item_title))
+
+                # 这里还需要对这三组list数据做对应日期映射
+                pay_item_qtylist = item['pay_item_qtylist']
+                pay_ord_cntlist = item['pay_ord_cntlist']
+                pay_byr_rate_index_list = item['pay_byr_rate_index_list']
+                update_date = datetime.date.today()
+                try:
+                    list_item, created = ListItem.get_or_create(
+                            item_title = item_title,
+                            item_id = item_id,
+                            shop_name = shop_name,
+                            defaults = {
+                                'item_price': item_price,
+                                'item_url': item_url,
+                                }
+                    if not created:
+                        list_item.item_price = item_price
+                        list_item.item_id = item_id
+                        list_item.save()
+                except Exception as e:
+                    logger.error(e)
+
+                
+
+
+

@@ -213,6 +213,7 @@ class Sycm(object):
         # pdb.set_trace()
         # 获得 商品信息(itemTitle)、商品id(itemId)
         total_page = self.get_list_item_total_page()+1
+        item_list = []
         for page in range(1, total_page):
             logger.debug('开始获取第{}页数据'.format(page)+'-'*20)
             list_items_url = 'https://sycm.taobao.com/mq/rank/listItems.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page={page}&pageSize=100&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142'\
@@ -244,6 +245,19 @@ class Sycm(object):
                 pay_byr_rate_index_list = tred_items['content']['data']['payByrRateIndexList']
                 logger.debug('产品：{}, 所有终端-支付子订单数:{}, 所有终端-支付转化率指数:{}, 所有终端-支付件数:{}'
                             .format(item_title, pay_ord_cntlist, pay_byr_rate_index_list, pay_item_qtylist))
+                item_info = {
+                        'shaop_name': shop_name,
+                        'item_title': item_title,
+                        'item_id': item_id,
+                        'item_price': item_price,
+                        'item_url': item_url,
+                        'pay_item_qtylist': pay_item_qtylist,
+                        'pay_ord_cntlist': pay_ord_cntlist,
+                        'pay_byr_rate_index_list': pay_byr_rate_index_list,
+                        }
+                item_list.append(item_info)
+            self.db.save_list_item_trend(item_list)
+        
            
 
 if __name__ == '__main__':
