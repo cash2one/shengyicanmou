@@ -24,7 +24,7 @@ class Sycm(object):
         self.data_url = 'https://sycm.taobao.com/mq/industry/product/detail.htm?spm=a21ag.7782686.0.0.c8PRca#/?brandId=3228590&cateId=50023717&dateRange=2017-06-21%7C2017-06-21&dateType=recent1&device=0&modelId=277847275&seller=-1&spuId=277847275'
         self.username = username
         self.passwd = passwd
-        self.db = Sycm()
+        # self.db = Sycm()
         self.session = requests.Session()
         # self._login(username, passwd)
 
@@ -136,7 +136,7 @@ class Sycm(object):
                 'operation':  operation
             }
             td_text.append(product_info)
-        self.db.save_industry_product(td_text)
+        # self.db.save_industry_product(td_text)
         
 
     def get_industry_total_pages(self, driver):

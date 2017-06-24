@@ -40,4 +40,4 @@ class Sycm(object):
                         industry_product.save()
                 except Exception as e:
                     logger.error(e)
-       return item
+        return item
