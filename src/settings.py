@@ -1,4 +1,33 @@
+import os
+import random
+
+from utils import get_user_agent
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+MYSQL_DBNAME = 'shengyicanmou'
+MYSQL_USER = 'root'
+MYSQL_PASSWD = ''
+
+REFERER_LIST = [
+    'https://www.google.com/',
+    'https://www.baidu.com/',
+]
+
+HEADERS = {
+            "User-Agent": get_user_agent(),
+            "Referer" : random.choice(REFERER_LIST),
+            "Accept-encoding": "gzip",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Encoding": "gzip, deflate, sdch, br",
+            "Accept-Language": "en-US,en;q=0.8,zh-CN;q=0.6,zh;q=0.4,zh-TW;q=0.2",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            }
+
+PROXY_SITES = []
+
+
 
 LOGGING = {
     'version': 1,
