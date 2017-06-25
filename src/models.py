@@ -38,9 +38,10 @@ class ListItem(BaseModel):
 
     class Meta:
         db_table = 'list_item'
-         indexes = (
+        indexes = (
              # Specify a unique multi-column index on 'item_title', 'item_id'.
              (('item_title', 'item_id'), True),
+             )
 
 
 class ListItemTrend(BaseModel):
@@ -48,10 +49,10 @@ class ListItemTrend(BaseModel):
     商品趋势 数据
     '''
     list_item = ForeignKeyField(ListItem, related_name='list_item')
-    pay_item_qtylist = CharField()
-    pay_ord_cntlist = CharField()
-    pay_byr_rate_index_list = CharField()
-    update_date = CharField(default=datetime.date.today)
+    pay_item_qty = CharField()
+    pay_ord_cnt = CharField()
+    pay_byr_rate_index = CharField()
+    data_mapping_date = CharField()
 
     class Meta:
         db_table = 'list_item_trend'

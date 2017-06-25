@@ -5,8 +5,9 @@ import logging
 import logging.config
 
 from models import IndustryProduct, ListItemTrend, \
-        ListItem
+        ListItem, mysql_db
 from settings import LOGGING
+from  utils import get_30_date_before_today
 
 logging.config.dictConfig(LOGGING)
 logger = logging.getLogger('mydata')
@@ -73,12 +74,11 @@ class SycmData(object):
                 item_url = item['item_url']
                 logger.debug('\033[92m 保存商品店铺信息: shop_name:{0}, item_title:{1} \033[0m'
                     .format(shop_name, item_title))
-
                 # 这里还需要对这三组list数据做对应日期映射
                 pay_item_qtylist = item['pay_item_qtylist']
                 pay_ord_cntlist = item['pay_ord_cntlist']
                 pay_byr_rate_index_list = item['pay_byr_rate_index_list']
-                update_date = datetime.date.today()
+
                 try:
                     list_item, created = ListItem.get_or_create(
                             item_title = item_title,
@@ -87,11 +87,64 @@ class SycmData(object):
                             defaults = {
                                 'item_price': item_price,
                                 'item_url': item_url,
-                                }
+                                })
                     if not created:
                         list_item.item_price = item_price
                         list_item.item_id = item_id
                         list_item.save()
+
+                    cursor = mysql_db.execute_sql('select count(*) from ListItemTrend')
+                    res = cursor.fetchone()
+                    # 第一次将数据写入到ListItemTrend表时应该写入所有pay_*数据:
+                    if res[0] == 0:
+                        if not len(pay_item_qtylist) \
+                                == len(pay_ord_cntlist) \
+                                == len(pay_byr_rate_index_list) == 30:
+                            logger.warning('\033[94m please check the list data !!!\033[0m')
+                        else:
+                            date_list = get_30_date_before_today()
+                            for num, old_date in enumerate(date_list):
+                                data_mapping_date = old_date
+                                pay_item_qty = pay_item_qtylist[num]
+                                pay_ord_cnt = pay_ord_cntlist[num]
+                                pay_byr_rate_index = pay_byr_rate_index_list[num]
+                                logger.debug('\033[92m 保存商品趋势信息: \
+                                            date:{0}, 所有终端-支付子订单数:{1} ,\
+                                            所有终端-支付转化率指数：{2} ,\
+                                            所有终端-支付件数:{3}\033[0m'
+                                            .format(data_mapping_date,
+                                                pay_item_qty, pay_ord_cnt, 
+                                                pay_byr_rate_index))
+                                list_item_trend = ListItemTrend.create(
+                                        list_item = list_item,
+                                        pay_item_qty = pay_item_qty,
+                                        pay_ord_cnt = pay_ord_cnt,
+                                        pay_byr_rate_index = pay_byr_rate_index,
+                                        data_mapping_date = data_mapping_date
+                                        )
+                                list_item_trend.save()
+                    # 后面写入数据时只用写入 pay_* 中的前一天的数据
+                    else:
+                        data_mapping_date = datetime.date.today()- datetime.timedelta(days=1)
+                        pay_item_qty = pay_item_qtylist[-1]
+                        pay_ord_cnt = pay_ord_cntlist[-1]
+                        pay_byr_rate_index = pay_byr_rate_index_list[-1]
+                        logger.debug('\033[92m 保存商品趋势信息: \
+                                    date:{0}, 所有终端-支付子订单数:{1} ,\
+                                    所有终端-支付转化率指数：{2} ,\
+                                    所有终端-支付件数:{3}\033[0m'
+                                    .format(data_mapping_date,
+                                        pay_item_qty, pay_ord_cnt, 
+                                        pay_byr_rate_index))
+                        list_item_trend = ListItemTrend.create(
+                                list_item = list_item,
+                                pay_item_qty = pay_item_qty,
+                                pay_ord_cnt = pay_ord_cnt,
+                                pay_byr_rate_index = pay_byr_rate_index,
+                                data_mapping_date = data_mapping_date
+                                )
+                        list_item_trend.save()
+
                 except Exception as e:
                     logger.error(e)
 

@@ -172,7 +172,6 @@ class Sycm(object):
         '''
         抓取 市场->产品分析 表格数据
         '''
-    
         product_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm'
         if driver:
             driver.get(product_url)
@@ -195,7 +194,8 @@ class Sycm(object):
             self.analysis_industry_html(page_source)
           
     def get_list_item_total_page(self):
-        list_items_url = 'https://sycm.taobao.com/mq/rank/listItems.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page=1&pageSize=100&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142'
+        list_items_url = 'https://sycm.taobao.com/mq/rank/listItems.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre={yesterday}|{yesterday}&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page=1&pageSize=100&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142'\
+                .format(yesterday=self.get_yesterday())
         res = self.session.get(url=list_items_url, headers=HEADERS, verify=False)
         list_items = json.loads(res.text)
         total_items_count = list_items['content']['data']['recordCount']
@@ -216,8 +216,8 @@ class Sycm(object):
         item_list = []
         for page in range(1, total_page):
             logger.debug('开始获取第{}页数据'.format(page)+'-'*20)
-            list_items_url = 'https://sycm.taobao.com/mq/rank/listItems.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page={page}&pageSize=100&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142'\
-                            .format(page=page)
+            list_items_url = 'https://sycm.taobao.com/mq/rank/listItems.json?cateId=50023717&categoryId=50023717&dateRange={yesterday}%7C{yesterday}&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page={page}&pageSize=100&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142'\
+                            .format(yesterday=self.get_yesterday(), page=page)
             res = self.session.get(url=list_items_url, headers=HEADERS, verify=False)
             list_items = json.loads(res.text)
             total_items_count = list_items['content']['data']['recordCount']
@@ -236,8 +236,8 @@ class Sycm(object):
                 item_url = item['itemUrl']
 
                 # 构造 商品趋势的折线图 的URL
-                item_tred_url = 'https://sycm.taobao.com/mq/rank/listItemTrend.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&indexes=payOrdCnt,payByrRateIndex,payItemQty&itemDetailType=1&itemId={item_id}&latitude=undefined&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=detail'\
-                                .format(item_id=item_id)
+                item_tred_url = 'https://sycm.taobao.com/mq/rank/listItemTrend.json?cateId=50023717&categoryId=50023717&dateRange={yesterday}%7C{yesterday}&dateRangePre={yesterday}|{yesterday}&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&indexes=payOrdCnt,payByrRateIndex,payItemQty&itemDetailType=1&itemId={item_id}&latitude=undefined&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=detail'\
+                                .format(yesterday=self.get_yesterday(), item_id=item_id)
                 tred_res = self.session.get(url=item_tred_url, headers=HEADERS, verify=False)
                 tred_items = json.loads(tred_res.text)
                 pay_item_qtylist = tred_items['content']['data']['payItemQtyList']
@@ -257,7 +257,6 @@ class Sycm(object):
                         }
                 item_list.append(item_info)
             self.db.save_list_item_trend(item_list)
-        
            
 
 if __name__ == '__main__':
