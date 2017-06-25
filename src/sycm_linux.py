@@ -48,8 +48,6 @@ class Sycm(object):
         driver = webdriver.PhantomJS()
         driver.maximize_window()
         driver.get(login_url)
-        #import pdb
-        #pdb.set_trace()
         logger.debug("start login")
         username_field  = driver.find_element_by_id("TPL_username_1")
         username_field.send_keys(self.username)
@@ -58,6 +56,8 @@ class Sycm(object):
         login_button = driver.find_element_by_id("J_SubmitStatic")
         login_button.click()
         time.sleep(20)
+        #import pdb
+        #pdb.set_trace()
 
         # 如果该主机是第一次登录生意参谋，会要求进行短信验证，此时界面会触发其短信验证的弹窗：
         if re.findall(r'安全验证', driver.page_source):
