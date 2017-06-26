@@ -4,6 +4,7 @@ import datetime
 from peewee import *
 
 from settings import MYSQL_DBNAME, MYSQL_USER, MYSQL_PASSWD
+from utils import get_yesterday
 
 mysql_db = MySQLDatabase(MYSQL_DBNAME, user=MYSQL_USER, passwd=MYSQL_PASSWD)
 
@@ -23,7 +24,7 @@ class IndustryProduct(BaseModel):
     sales = CharField()
     operation = CharField()
     sycm_product_url = CharField()
-    update_date = CharField(default=datetime.date.today)
+    update_date = CharField(default=get_yesterday)
 
     class Meta:
         db_table = 'industry_product'
@@ -31,6 +32,8 @@ class IndustryProduct(BaseModel):
 
 class ListItem(BaseModel):
     shop_name = CharField()
+    item_category = CharField()
+    item_category_id = CharField()
     item_title = CharField()
     item_id = CharField()
     item_price = CharField()
@@ -40,7 +43,7 @@ class ListItem(BaseModel):
         db_table = 'list_item'
         indexes = (
              # Specify a unique multi-column index on 'item_title', 'item_id'.
-             (('item_title', 'item_id'), True),
+             (('shop_name', 'item_title', 'item_id'), True),
              )
 
 
@@ -56,3 +59,8 @@ class ListItemTrend(BaseModel):
 
     class Meta:
         db_table = 'list_item_trend'
+        indexes = (
+             # Specify a unique multi-column index on 'item_title', 'item_id'.
+             (('data_mapping_date', 'list_item'), True),
+             )
+

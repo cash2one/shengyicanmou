@@ -29,3 +29,9 @@ def get_30_date_before_today():
         start -= 1
     return date_list
         
+
+def get_yesterday():
+    today=datetime.date.today()
+    oneday=datetime.timedelta(days=1)
+    yesterday=today-oneday 
+    return yesterday

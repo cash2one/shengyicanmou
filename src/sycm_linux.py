@@ -16,6 +16,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 from settings import LOGGING, HEADERS
 from pipelines import SycmData
+from utils import get_yesterday
 
 logging.config.dictConfig(LOGGING)
 logger = logging.getLogger('myspider')
@@ -66,12 +67,8 @@ class Sycm(object):
             ## 这里需要解决滑块验证的问题！！！
             logger.debug('*'*20 + '\033[92m 需进行滑块验证 \033[0m')
         
-        # if self._check_login():
-        #     logger.debug("login success")
-        # else:
-        #     self.failed_count += 1
-        #     logger.debug("login {} failed, try login".format(self.failed_count))
-        #     self._login(username, passwd)
+        if self._check_login():
+            logger.debug("login success")
         cookies = driver.get_cookies()
         login_cookies = {item["name"] : item["value"] for item in cookies}
         self._save_login_cookies(login_cookies)
@@ -169,12 +166,6 @@ class Sycm(object):
         logger.debug('产品分析页数据总页数:{}'.format(total_page))
         return total_page
 
-    def get_yesterday(self):
-        today=datetime.date.today()
-        oneday=datetime.timedelta(days=1)
-        yesterday=today-oneday 
-        return yesterday
-
     def crawl_industry_data(self, driver=None):
         '''
         抓取 市场->产品分析 表格数据
@@ -194,7 +185,7 @@ class Sycm(object):
             #import pdb
             #pdb.set_trace()
             per_100_url = 'https://sycm.taobao.com/mq/industry/product/rank.htm?spm=a21ag.7782695.LeftMenu.d320.mfz2ZP&page=1&pageSize=50#/?cateId=50023717&dateRange={yesterday}%7C{yesterday}&dateType=recent1&device=0&orderBy=tradeIndex&orderType=desc&page={page}&pageSize=100&seller=-1'\
-                .format(yesterday=self.get_yesterday(),  page=page)
+                .format(yesterday=get_yesterday(),  page=page)
             driver.get(per_100_url)
             page_source = driver.page_source
             logger.debug('开始获取第{}页数据'.format(page)+'-'*40)
@@ -202,7 +193,7 @@ class Sycm(object):
           
     def get_list_item_total_page(self):
         list_items_url = 'https://sycm.taobao.com/mq/rank/listItems.json?cateId=50023717&categoryId=50023717&dateRange=2017-06-22%7C2017-06-22&dateRangePre={yesterday}|{yesterday}&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page=1&pageSize=100&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142'\
-                .format(yesterday=self.get_yesterday())
+                .format(yesterday=get_yesterday())
         res = self.session.get(url=list_items_url, headers=HEADERS, verify=False)
         list_items = json.loads(res.text)
         total_items_count = list_items['content']['data']['recordCount']
@@ -224,7 +215,7 @@ class Sycm(object):
         for page in range(1, total_page):
             logger.debug('开始获取第{}页数据'.format(page)+'-'*20)
             list_items_url = 'https://sycm.taobao.com/mq/rank/listItems.json?cateId=50023717&categoryId=50023717&dateRange={yesterday}%7C{yesterday}&dateRangePre=2017-06-22|2017-06-22&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page={page}&pageSize=100&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142'\
-                            .format(yesterday=self.get_yesterday(), page=page)
+                            .format(yesterday=get_yesterday(), page=page)
             res = self.session.get(url=list_items_url, headers=HEADERS, verify=False)
             list_items = json.loads(res.text)
             total_items_count = list_items['content']['data']['recordCount']
@@ -241,11 +232,11 @@ class Sycm(object):
                     # 产品价格
                     item_price = item['itemPrice']
                     # 产品url
-                    item_url = item['itemUrl']
+                    item_url = 'https' + item['itemUrl'] if item['itemUrl']
 
                     # 构造 商品趋势的折线图 的URL
                     item_tred_url = 'https://sycm.taobao.com/mq/rank/listItemTrend.json?cateId=50023717&categoryId=50023717&dateRange={yesterday}%7C{yesterday}&dateRangePre={yesterday}|{yesterday}&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&indexes=payOrdCnt,payByrRateIndex,payItemQty&itemDetailType=1&itemId={item_id}&latitude=undefined&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=detail'\
-                                    .format(yesterday=self.get_yesterday(), item_id=item_id)
+                                    .format(yesterday=get_yesterday(), item_id=item_id)
                     tred_res = self.session.get(url=item_tred_url, headers=HEADERS, verify=False)
                     tred_items = json.loads(tred_res.text)
                     #import pdb
