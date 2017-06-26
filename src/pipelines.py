@@ -124,9 +124,9 @@ class SycmData(object):
                                     list_item = list_item,
                                     data_mapping_date = data_mapping_date,
                                     defaults = {
-                                        'pay_item_qty': pay_item_qty,
-                                        'pay_ord_cnt': pay_ord_cnt,
-                                        'pay_byr_rate_index': pay_byr_rate_index,
+                                        'pay_item_qty': pay_item_qty if  pay_item_qty else 0,
+                                        'pay_ord_cnt': pay_ord_cnt if pay_ord_cnt else 0,
+                                        'pay_byr_rate_index': pay_byr_rate_index if pay_byr_rate_index else 0,
                                         }
                                     )
                             if not created:
