@@ -93,7 +93,9 @@ class SycmData(object):
                         list_item.item_id = item_id
                         list_item.save()
 
-                    cursor = mysql_db.execute_sql('select count(*) from ListItemTrend')
+                    #import pdb
+                    #pdb.set_trace()
+                    cursor = mysql_db.execute_sql('select count(*) from list_item_trend')
                     res = cursor.fetchone()
                     # 第一次将数据写入到ListItemTrend表时应该写入所有pay_*数据:
                     if res[0] == 0:
