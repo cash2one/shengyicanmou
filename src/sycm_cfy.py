@@ -112,8 +112,11 @@ class Sycm(object):
                 .format(yesterday=get_yesterday())
         res = self.session.get(url=list_items_url, headers=HEADERS, verify=False)
         list_items = json.loads(res.text)
-        total_items_count = list_items['content']['data']['recordCount']
-        total_page = int(total_items_count/100)
+        try:
+            total_items_count = list_items['content']['data']['recordCount']
+            total_page = int(total_items_count/100)
+        except Exception as e:
+            logger.warning('\033[96m 请先在本机上登录 生意参谋 后，再运行程序 \033[0m')
         return total_page
 
     def crawl_list_item_trend(self):
