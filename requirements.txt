@@ -5,3 +5,4 @@ selenium==3.4.3
 fake-useragent==0.1.7
 beautifulsoup4==4.6.0
 lxml==3.8.0
+openpyxl==2.4.8

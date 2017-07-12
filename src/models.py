@@ -3,10 +3,10 @@ import datetime
 # from MySQLdb import *                                              
 from peewee import *
 
-from settings import MYSQL_DBNAME, MYSQL_USER, MYSQL_PASSWD
+from settings import MYSQL_HOST, MYSQL_DBNAME, MYSQL_USER, MYSQL_PASSWD
 from utils import get_yesterday
 
-mysql_db = MySQLDatabase(MYSQL_DBNAME, user=MYSQL_USER, passwd=MYSQL_PASSWD)
+mysql_db = MySQLDatabase(MYSQL_DBNAME, host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASSWD)
 
 class BaseModel(Model):
     """A base model that will use our MySQL database"""
@@ -31,6 +31,9 @@ class IndustryProduct(BaseModel):
 
 
 class ListItem(BaseModel):
+    '''
+    商品店铺表
+    '''
     shop_name = CharField()
     item_category = CharField()
     item_category_id = CharField()
@@ -40,7 +43,7 @@ class ListItem(BaseModel):
     item_url = CharField()
 
     class Meta:
-        db_table = 'list_item'
+        db_table = 'product_shop'
         indexes = (
              # Specify a unique multi-column index on 'item_title', 'item_id'.
              (('shop_name', 'item_title', 'item_id'), True),
@@ -58,7 +61,7 @@ class ListItemTrend(BaseModel):
     data_mapping_date = CharField()
 
     class Meta:
-        db_table = 'list_item_trend'
+        db_table = 'product_trend'
         indexes = (
              # Specify a unique multi-column index on 'item_title', 'item_id'.
              (('data_mapping_date', 'list_item'), True),

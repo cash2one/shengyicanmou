@@ -5,9 +5,10 @@ from utils import get_user_agent
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+MYSQL_HOST = '172.17.240.6'
 MYSQL_DBNAME = 'shengyicanmou'
 MYSQL_USER = 'root'
-MYSQL_PASSWD = 'root.123'
+MYSQL_PASSWD = '2016abc'
 
 REFERER_LIST = [
     'https://www.google.com/',
