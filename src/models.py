@@ -13,22 +13,66 @@ class BaseModel(Model):
     class Meta:
         database = mysql_db
 
+# class IndustryFirstCategory(BaseModel):
+#     '''
+#     存储一级目录
+#     '''
+#     cate_id = CharField(verbose_name='一级产品类型ID', unique=True)
+#     cate_name = CharField(verbose_name='一级产品类型')
+ 
+#     class Meta:
+#         db_table = 'industry_first_category'
 
-class IndustryProduct(BaseModel):
+class IndustryCategory(BaseModel):
     '''
-    产品分析 数据
+    存储一、二级目录
     '''
-    ranking = CharField()
-    product = CharField()
-    sale_index = CharField()
-    sales = CharField()
-    operation = CharField()
-    sycm_product_url = CharField()
-    update_date = CharField(default=get_yesterday)
+    second_cate_id = IntegerField(verbose_name='二级产品类型ID')
+    second_cate_name = CharField(verbose_name='二级产品类型', null=True)
+    cate_id = IntegerField(verbose_name='一级产品类型ID')
+    cate_name = CharField(verbose_name='一级产品类型')
+    update_time = CharField(default=datetime.date.today)
 
     class Meta:
-        db_table = 'industry_product'
+        db_table = 'industry_category'
+        indexes = (
+             (('cate_id', 'second_cate_id'), True),
+             )
 
+class IndustryThirdCategory(BaseModel):
+    '''
+    存储三级目录
+    '''
+    second_category = ForeignKeyField(IndustryCategory, related_name='second_category')
+    third_cate_id = CharField(verbose_name='三级产品类型ID', unique=True)
+    third_cate_name = CharField(verbose_name='三级产品类型')
+    update_time = CharField(default=datetime.date.today)
+
+    class Meta:
+        db_table = 'industry_third_category'
+        # indexes = (
+        #      (('second_category', 'third_cate_id'), True),
+        #      )
+
+class Industrys(BaseModel):
+    '''
+    存储三级或二级目录下的商品详细信息
+    '''
+    third_category = ForeignKeyField(IndustryThirdCategory, related_name='third_category')
+    model_id = IntegerField(verbose_name='产品ID')
+    model_name = CharField(verbose_name='产品名')
+    trade_index = CharField(verbose_name='交易指数')
+    pay_item_qty = CharField(verbose_name='支付件数')
+    brand_id = CharField(verbose_name='品牌ID')
+    brand_name = CharField(verbose_name='品牌名')
+    rank_id = CharField(verbose_name='特定产品类型下的排名')
+    update_time = CharField(default=datetime.date.today)
+
+    class Meta:
+        db_table = 'industrys'
+        indexes = (
+             (('model_id', 'brand_id', 'update_time'), True),
+             )
 
 class ListItem(BaseModel):
     '''

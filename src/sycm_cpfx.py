@@ -1,0 +1,206 @@
+# coding:utf-8
+
+import os
+import time
+import datetime
+import pprint
+import json
+import re
+import logging
+import logging.config
+
+from lxml import etree
+import requests
+from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
+
+from settings import LOGGING, HEADERS
+from pipelines import SycmData
+from utils import get_yesterday
+from models import IndustryCategory, IndustryThirdCategory
+
+logging.config.dictConfig(LOGGING)
+logger = logging.getLogger('myspider')
+
+class Sycm(object):
+
+    def __init__(self,  username, passwd):
+        self.username = username
+        self.passwd = passwd
+        self.db = SycmData()
+        self.session = requests.Session()
+
+        self._get_login_cookies()
+        if self._check_login():            
+            logger.debug('from cache...cookies...,login success')
+            self.crawl_industry_category()
+        else:
+            # 防止cookie过期失效
+            self.session.cookies.clear()
+            self.crawl_industry_category()
+           
+
+    def _login(self, username, passwd):
+        # url = 'https://sycm.taobao.com'
+        login_url = 'https://login.taobao.com/member/login.jhtml?from=sycm&full_redirect=true&style=minisimple&minititle=&minipara=0,0,0&sub=true&redirect_url=http://sycm.taobao.com/'
+        driver = webdriver.Chrome(
+            executable_path="E:/Program Files (x86)/chromedriver"
+            # executable_path="C:/Program Files (x86)/Google/Chrome/Application/chromedriver"
+            )
+        # driver = webdriver.PhantomJS()
+        driver.maximize_window()
+        driver.get(login_url)
+        logger.debug("start login")
+        username_field  = driver.find_element_by_id("TPL_username_1")
+        username_field.send_keys(self.username)
+        passwd_field = driver.find_element_by_id("TPL_password_1")
+        passwd_field.send_keys(self.passwd)
+        login_button = driver.find_element_by_id("J_SubmitStatic")
+        login_button.click()
+        time.sleep(20)
+        #import pdb
+        #pdb.set_trace()
+
+        # 如果该主机是第一次登录生意参谋，会要求进行短信验证，此时界面会触发其短信验证的弹窗：
+        if re.findall(r'安全验证', driver.page_source):
+            ## 这里需要解决短信验证的问题！！！
+            logger.debug('*'*20 + '\033[92m 需进行短信验证,请注意，如果长时间不验证，\
+                会跳转到本次请求已超时的页面,此时再验证会一直停留在该界面 \033[0m')
+        elif re.findall(r'滑块验证码', driver.page_source):
+            ## 这里需要解决滑块验证的问题！！！
+            logger.debug('*'*20 + '\033[92m 需进行滑块验证 \033[0m')
+        
+        if self._check_login():
+            logger.debug("login success")
+        cookies = driver.get_cookies()
+        login_cookies = {item["name"] : item["value"] for item in cookies}
+        self._save_login_cookies(login_cookies)
+        return login_cookies
+        
+    def _save_login_cookies(self, login_cookies):
+        if not isinstance(login_cookies, dict):
+            logger.debug('The cookies must be dict type')
+            return
+        with open("login_cookies.json", "w") as f:
+            json.dump(login_cookies, f)
+        self.session.cookies.update(login_cookies)
+
+    def _get_login_cookies(self):
+        """从文本中获得cookies
+        """
+        with open("login_cookies.json") as f:
+            cookies = json.load(f)
+            self.session.cookies.update(cookies)
+        return cookies
+
+    def _check_login(self):
+        """验证是否登陆成功
+        Returns:
+            Boolean: 是否登陆成功
+        """
+        data_url = 'https://sycm.taobao.com/mq/industry/product/detail.htm?spm=a21ag.7782686.0.0.c8PRca#/?brandId=3228590&cateId=50023717&dateRange=2017-06-21%7C2017-06-21&dateType=recent1&device=0&modelId=277847275&seller=-1&spuId=277847275'
+        res = self.session.get(data_url, headers=HEADERS, verify=False)
+        text = res.text
+        login_key = re.findall(r'title="登出"', text)
+        if login_key:
+            return True
+        else:
+            return False
+    
+    def crawl_industry_category(self, driver=None):
+        '''
+        抓取 市场->产品分析 表格数据
+        获取产品名：cate_name 和 产品ID：cate_id
+        '''
+        category_url = 'https://sycm.taobao.com/mq/common/category.json?edition=2&statDate=2017-07-12'
+        
+        if driver:
+            driver.get(category_url)
+            page_source = driver.page_source
+        else:
+            res = self.session.get(category_url, headers=HEADERS, verify=False)
+            page_source = res.content
+        try:
+            info = json.loads(page_source)
+        except Exception as e:
+            info = json.loads(page_source.decode('utf-8'))
+            if info.get('code') == 5810: self._login(self.username, self.passwd)
+        data = info['content']['data']  # len(data)=290
+        item_list = []
+       
+        for item in data:
+            if item[1]:  #排除写入一级目录
+                if item[1] == item[-1]: 
+                    # 此时该目录是二级目录
+                    second_cate_id = item[0]
+                    second_cate_name = item[2]
+                    cate_id = item[-1]
+                    third_cate_id = second_cate_id
+                    third_cate_name = '无三级目录'
+                else:
+                    #此时该目录是三级目录
+                    second_cate_id = item[1]
+                    second_cate_name = None
+                    third_cate_id = item[0]
+                    third_cate_name = item[2]
+                    cate_id = item[-1]
+                item_list.append({
+                    'second_cate_id': second_cate_id,
+                    'second_cate_name': second_cate_name,
+                    'third_cate_id': third_cate_id,
+                    'third_cate_name': third_cate_name,
+                    'cate_id': cate_id,
+                })
+        self.db.save_category(item_list)
+        return self.crawl_industry_info()
+    
+    def crawl_industry_info(self):
+        '''
+        获取二级（没有三级目录时）或三级目录下的商品详情
+        '''
+        url = 'https://sycm.taobao.com/mq/industry/product/product_rank/getRankList.json?cateId={cate_id}&dateRange={yesterday}%7C{yesterday}&dateType=recent1&device=0&seller=-1'
+        #获取没有三级目录的二级目录的cate_id
+        # second_categorys = IndustryCategory.raw('select cate_id from industry_category where count_third >0')
+        # second_cate_ids = IndustryCategory.select(IndustryCategory.cate_id).where(IndustryCategory.count_third >0)
+        cate_id_list = IndustryThirdCategory.select(IndustryThirdCategory.third_cate_id)
+        item_list = []
+        length = cate_id_list.count()
+        for num in range(length):
+            cate_id = cate_id_list[num].third_cate_id
+            url = url.format(cate_id=cate_id, yesterday=get_yesterday())
+            res = self.session.get(url, headers=HEADERS, verify=False)
+            info = json.loads(res.content.decode('utf-8'))
+            # import pdb
+            # pdb.set_trace()
+            try:
+                items = info['content']['data']
+                for data in items:
+                    model_id = data['modelId']
+                    model_name = data['modelName']
+                    trade_index = data['tradeIndex']
+                    pay_item_qty = data['payItemQty']
+                    brand_id = data['brandId']
+                    brand_name = data['brandName']
+                    rank_id = data['rankId']
+                    item_list.append({
+                        'cate_id': cate_id,
+                        'model_id': model_id,
+                        'model_name': model_name,
+                        'trade_index': trade_index,
+                        'pay_item_qty': pay_item_qty,
+                        'brand_id': brand_id,
+                        'brand_name': brand_name,
+                        'rank_id': rank_id,
+                    })
+                self.db.save_industrys(item_list)
+                logger.debug('产品分析数据总量'.format(len(item_list)))
+            except Exception as e:
+                logger.debug('请重新登录{}'.format(info))
+                self._login(self.username, self.passwd)
+                self.crawl_industry_info()
+
+if __name__ == '__main__':
+    username = '健客大药房旗舰店:运营04'
+    passwd = 'cfyyy_04'
+    sycm = Sycm(username, passwd)
+

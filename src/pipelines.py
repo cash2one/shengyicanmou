@@ -4,7 +4,8 @@ import datetime
 import logging
 import logging.config
 
-from models import IndustryProduct, ListItemTrend, \
+from models import  ListItemTrend, IndustryCategory,\
+        IndustryThirdCategory, Industrys,\
         ListItem, mysql_db
 from settings import LOGGING
 from  utils import get_30_date_before_today, get_yesterday
@@ -13,8 +14,14 @@ logging.config.dictConfig(LOGGING)
 logger = logging.getLogger('mydata')
 
 def before_request_handler():
-    if not IndustryProduct.table_exists():
-        IndustryProduct.create_table()
+    # if not IndustryFirstCategory.table_exists():
+    #     IndustryFirstCategory.create_table()
+    if not IndustryCategory.table_exists():
+        IndustryCategory.create_table()
+    if not IndustryThirdCategory.table_exists():
+        IndustryThirdCategory.create_table()
+    if not Industrys.table_exists():
+        Industrys.create_table()
     if not ListItem.table_exists():
         ListItem.create_table()
     if not ListItemTrend.table_exists():
@@ -24,43 +31,111 @@ class SycmData(object):
 
     def __init__(self):
         before_request_handler()
+    
+    # def save_industry_category(self):
+    #     '''
+    #     https://sycm.taobao.com/mq/industry/product/rank.htm
+    #     在页面数据没有发生变化之前，该表数据固定不变
+    #     '''
+    #     categorys = [
+    #         {'cate_id': '122966004', 'cate_name': '处方药'},
+    #         {'cate_id': '50023717', 'cate_name': 'OCT药品/医疗器械/计生用品'},
+    #     ]
+    #     with mysql_db.atomic():
+    #         IndustryFirstCategory.insert_many(categorys).execute()
+      
+    def save_category(self, item_list):
+        # if not IndustryFirstCategory.select().count():
+        #     self.save_industry_category()
+        for item in item_list:
+            second_cate_id = item['second_cate_id']
+            second_cate_name = item['second_cate_name']
+            third_cate_id = item['third_cate_id']
+            third_cate_name = item['third_cate_name']
+            cate_id = item['cate_id']
 
-    def save_industry_product(self, items):
-        if not isinstance(items, list):
-            return
-        else:
-            for item in items:
-                ranking = item['ranking']
-                product = item['product']
-                sycm_product_url = item['sycm_product_url']
-                sale_index = item['sale_index']
-                sales = item['sales']
-                operation = item['operation']
-                update_date = get_yesterday()
-                logger.debug('\033[92m 保存产品分析的数据: product:{0}, ranking:{1} \033[0m'
-                    .format(product, ranking))
-                try:
-                    industry_product, created = IndustryProduct.get_or_create(
-                        product = product,
-                        update_date = update_date,
-                        sale_index = sale_index,
+            if cate_id == 50023717: cate_name = 'OCT药品/医疗器械/计生用品'
+            elif cate_id == 122966004: cate_name = '处方药'
+            else: cate_name = None
+            logger.debug('\033[96m 保存产品分析一、二级目录数据: cate_name:{0}, \
+                        second_cate_name:{1} \033[0m'.format(cate_name, second_cate_name))
+            try:
+                if second_cate_name:
+                    #此时该目录是三级目录            
+                    second_category, created = IndustryCategory.get_or_create(
+                        second_cate_id = second_cate_id,
+                        cate_id = cate_id,
                         defaults = {
-                            'ranking': ranking,
-                            'sales': sales,
-                            'operation': operation,
-                            'sycm_product_url': sycm_product_url
+                            'second_cate_name': second_cate_name,
+                            'cate_name': cate_name,
+                        })
+                    if not created:
+                        second_category.second_cate_name = second_cate_name
+                        second_category.cate_name = cate_name
+                        second_category.save()
+                else:
+                    #此时该目录是二级目录
+                    second_category = IndustryCategory.get_or_create(
+                        second_cate_id = second_cate_id,
+                        cate_id = cate_id,
+                        defaults = {
+                            'second_cate_name': second_cate_name,
+                            'cate_name': cate_name,
+                        })
+
+                third_category, third_created = IndustryThirdCategory.get_or_create(
+                    third_cate_id = third_cate_id,
+                    defaults ={
+                        'second_category': second_category,
+                        'third_cate_name': third_cate_name
+                    })
+                if not third_created:
+                    third_category.second_category = second_category
+                    third_category.third_cate_name = third_cate_name
+                    third_category.save()
+            except Exception as e:
+                logger.error('\033[92m {} \033[0m'.format(e)) 
+
+    def save_industrys(self, item_list):
+        for item in item_list:
+            third_cate_id = item['cate_id']
+            model_id = item['model_id']
+            model_name = item['model_name']
+            trade_index = item['trade_index']
+            pay_item_qty = item['pay_item_qty']
+            brand_id = item['brand_id']
+            brand_name = item['brand_name']
+            rank_id = item['rank_id']
+            update_time = datetime.date.today()
+            logger.debug('\033[96m 保存产品分析的详情: 产品名:{0} \033[0m'.format(model_name))
+            try:
+                import pdb
+                pdb.set_trace()
+                third_category = IndustryThirdCategory.get(third_cate_id=third_cate_id)
+                industry, created = Industrys.get_or_create(
+                        model_id = model_id,
+                        update_time = update_time,
+                        brand_id = brand_id,
+                        defaults = {
+                            'third_category':third_category,
+                            'model_name': model_name,
+                            'trade_index': trade_index,
+                            'pay_item_qty': pay_item_qty,
+                            'brand_name': brand_name,
+                            'rank_id': rank_id,
                             },
                         )
-                    if not created:
-                        industry_product.ranking = ranking
-                        industry_product.sales = sales
-                        industry_product.operation = operation
-                        industry_product.sycm_product_url = sycm_product_url
-                        #import pdb
-                        #pdb.set_trace()
-                        industry_product.save()
-                except Exception as e:
-                    logger.error(e)
+                if not created:
+                        industry.third_category = third_category
+                        industry.model_name = model_name
+                        industry.trade_index = trade_index
+                        industry.pay_item_qty = pay_item_qty
+                        industry.brand_id = brand_id
+                        industry.brand_name = brand_name
+                        industry.rank_id = rank_id
+                        industry.save()
+            except Exception as e:
+                logger.error('\033[92m {} \033[0m'.format(e))
 
     def save_list_item_trend(self, items):
         if not isinstance(items, list):
