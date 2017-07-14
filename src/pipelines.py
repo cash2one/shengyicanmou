@@ -59,6 +59,8 @@ class SycmData(object):
             else: cate_name = None
             logger.debug('\033[96m 保存产品分析一、二级目录数据: cate_name:{0}, \
                         second_cate_name:{1} \033[0m'.format(cate_name, second_cate_name))
+            #import pdb
+            #pdb.set_trace()
             try:
                 if second_cate_name:
                     #此时该目录是三级目录            
@@ -90,6 +92,8 @@ class SycmData(object):
                         'third_cate_name': third_cate_name
                     })
                 if not third_created:
+                    if isinstance(second_category, tuple):
+                        second_category = second_category[0]
                     third_category.second_category = second_category
                     third_category.third_cate_name = third_cate_name
                     third_category.save()
@@ -109,8 +113,6 @@ class SycmData(object):
             update_time = datetime.date.today()
             logger.debug('\033[96m 保存产品分析的详情: 产品名:{0} \033[0m'.format(model_name))
             try:
-                import pdb
-                pdb.set_trace()
                 third_category = IndustryThirdCategory.get(third_cate_id=third_cate_id)
                 industry, created = Industrys.get_or_create(
                         model_id = model_id,
@@ -191,7 +193,7 @@ class SycmData(object):
                             pay_item_qty = pay_item_qtylist[num]
                             pay_ord_cnt = pay_ord_cntlist[num]
                             pay_byr_rate_index = pay_byr_rate_index_list[num]
-                            logger.debug('\033[92m 保存商品趋势信息: date:{0}, 所有终端-支付子订单数:{1} , 所有终端-支付转化率指数：{2} ,所有终端-支付件数:{3}\033[0m'
+                            logger.debug('\033[96m 保存商品趋势信息: date:{0}, 所有终端-支付子订单数:{1} , 所有终端-支付转化率指数：{2} ,所有终端-支付件数:{3}\033[0m'
                                         .format(data_mapping_date,
                                             pay_item_qty, pay_ord_cnt, 
                                             pay_byr_rate_index))
@@ -210,7 +212,7 @@ class SycmData(object):
                                 list_item_trend.pay_byr_rate_index = pay_byr_rate_index
                                 list_item_trend.save()
                 except Exception as e:
-                    logger.error(e)
+                    logger.error('\033[92m {} \033[0m'.format(e))
 
                 
 

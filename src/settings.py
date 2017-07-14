@@ -93,4 +93,12 @@ LOGGING = {
             'propagate': True
         },
     }
+
 }
+
+import logging
+import logging.config
+
+logging.config.dictConfig(LOGGING)
+dblogger = logging.getLogger('mydata')
+logger = logging.getLogger('myspider')

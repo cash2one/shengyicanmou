@@ -1,26 +1,26 @@
 # coding:utf-8
 
+'''
+该脚本只针对 生意参谋-》市场-》产品分析(所有商品作三级目录分类，全部爬取)
+date: 2017-7-14
+'''
+
 import os
 import time
 import datetime
 import pprint
 import json
 import re
-import logging
-import logging.config
 
 from lxml import etree
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 
-from settings import LOGGING, HEADERS
+from settings import logger, HEADERS
 from pipelines import SycmData
 from utils import get_yesterday
 from models import IndustryCategory, IndustryThirdCategory
-
-logging.config.dictConfig(LOGGING)
-logger = logging.getLogger('myspider')
 
 class Sycm(object):
 
@@ -33,7 +33,8 @@ class Sycm(object):
         self._get_login_cookies()
         if self._check_login():            
             logger.debug('from cache...cookies...,login success')
-            self.crawl_industry_category()
+            #self.crawl_industry_category()
+            self.crawl_industry_info()
         else:
             # 防止cookie过期失效
             self.session.cookies.clear()
@@ -43,11 +44,11 @@ class Sycm(object):
     def _login(self, username, passwd):
         # url = 'https://sycm.taobao.com'
         login_url = 'https://login.taobao.com/member/login.jhtml?from=sycm&full_redirect=true&style=minisimple&minititle=&minipara=0,0,0&sub=true&redirect_url=http://sycm.taobao.com/'
-        driver = webdriver.Chrome(
-            executable_path="E:/Program Files (x86)/chromedriver"
-            # executable_path="C:/Program Files (x86)/Google/Chrome/Application/chromedriver"
-            )
-        # driver = webdriver.PhantomJS()
+        #driver = webdriver.Chrome(
+        #    executable_path="E:/Program Files (x86)/chromedriver"
+        #    # executable_path="C:/Program Files (x86)/Google/Chrome/Application/chromedriver"
+        #    )
+        driver = webdriver.PhantomJS()
         driver.maximize_window()
         driver.get(login_url)
         logger.debug("start login")
@@ -121,6 +122,8 @@ class Sycm(object):
             res = self.session.get(category_url, headers=HEADERS, verify=False)
             page_source = res.content
         try:
+            #import pdb
+            #pdb.set_trace()
             info = json.loads(page_source)
         except Exception as e:
             info = json.loads(page_source.decode('utf-8'))
@@ -151,6 +154,7 @@ class Sycm(object):
                     'third_cate_name': third_cate_name,
                     'cate_id': cate_id,
                 })
+                logger.debug('\033[95m 三级目录总:{}量 \033[0m'.format(len(item_list)))
         self.db.save_category(item_list)
         return self.crawl_industry_info()
     
@@ -158,22 +162,26 @@ class Sycm(object):
         '''
         获取二级（没有三级目录时）或三级目录下的商品详情
         '''
-        url = 'https://sycm.taobao.com/mq/industry/product/product_rank/getRankList.json?cateId={cate_id}&dateRange={yesterday}%7C{yesterday}&dateType=recent1&device=0&seller=-1'
         #获取没有三级目录的二级目录的cate_id
         # second_categorys = IndustryCategory.raw('select cate_id from industry_category where count_third >0')
         # second_cate_ids = IndustryCategory.select(IndustryCategory.cate_id).where(IndustryCategory.count_third >0)
         cate_id_list = IndustryThirdCategory.select(IndustryThirdCategory.third_cate_id)
-        item_list = []
         length = cate_id_list.count()
-        for num in range(length):
-            cate_id = cate_id_list[num].third_cate_id
-            url = url.format(cate_id=cate_id, yesterday=get_yesterday())
-            res = self.session.get(url, headers=HEADERS, verify=False)
-            info = json.loads(res.content.decode('utf-8'))
-            # import pdb
-            # pdb.set_trace()
-            try:
-                items = info['content']['data']
+        try:
+            for num in range(length):
+                item_list = []
+                cate_id = cate_id_list[num].third_cate_id
+                url = 'https://sycm.taobao.com/mq/industry/product/product_rank/getRankList.json?cateId={cate_id}&dateRange={yesterday}%7C{yesterday}&dateType=recent1&device=0&seller=-1'\
+                    .format(cate_id=cate_id, yesterday=get_yesterday())
+                res = self.session.get(url, headers=HEADERS, verify=False)
+                info = json.loads(res.content.decode('utf-8'))
+                # import pdb
+                # pdb.set_trace()
+                try:
+                    items = info['content']['data']
+                except Exception as e:
+                    logger.error('\033[92m {}报错:{}\033[0m'.format(url, e))
+                    continue
                 for data in items:
                     model_id = data['modelId']
                     model_name = data['modelName']
@@ -192,12 +200,12 @@ class Sycm(object):
                         'brand_name': brand_name,
                         'rank_id': rank_id,
                     })
+                logger.debug('\033[95m URL:{}, 数据总量:{} \033[0m'
+                        .format(url, len(item_list)))
                 self.db.save_industrys(item_list)
-                logger.debug('产品分析数据总量'.format(len(item_list)))
-            except Exception as e:
-                logger.debug('请重新登录{}'.format(info))
-                self._login(self.username, self.passwd)
-                self.crawl_industry_info()
+        except Exception as e:
+            logger.error('\033[92m {} \033[0m'.format(e))
+
 
 if __name__ == '__main__':
     username = '健客大药房旗舰店:运营04'

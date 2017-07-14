@@ -11,19 +11,14 @@ import datetime
 import pprint
 import json
 import re
-import logging
-import logging.config
 
 from lxml import etree
 import requests
 from selenium import webdriver
 
-from settings import LOGGING, HEADERS
+from settings import logger, HEADERS
 from pipelines import SycmData
 from utils import get_yesterday
-
-logging.config.dictConfig(LOGGING)
-logger = logging.getLogger('myspider')
 
 class Sycm(object):
 
