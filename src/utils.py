@@ -1,6 +1,5 @@
 # coding:utf-8
 
-import random
 import datetime
 
 from fake_useragent import UserAgent
@@ -28,10 +27,10 @@ def get_30_date_before_today():
         date_list.append(today-day )
         start -= 1
     return date_list
-        
 
-def get_yesterday():
+
+def get_lastday(day=1):
     today=datetime.date.today()
-    oneday=datetime.timedelta(days=1)
-    yesterday=today-oneday 
-    return yesterday
+    oneday=datetime.timedelta(day)
+    lastday=today-oneday
+    return lastday

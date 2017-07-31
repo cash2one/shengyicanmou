@@ -1,10 +1,10 @@
 import datetime
 
-# from MySQLdb import *                                              
+# from MySQLdb import *
 from peewee import *
 
 from settings import MYSQL_HOST, MYSQL_DBNAME, MYSQL_USER, MYSQL_PASSWD
-from utils import get_yesterday
+from utils import get_lastday
 
 mysql_db = MySQLDatabase(MYSQL_DBNAME, host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASSWD)
 
@@ -19,7 +19,7 @@ class BaseModel(Model):
 #     '''
 #     cate_id = CharField(verbose_name='一级产品类型ID', unique=True)
 #     cate_name = CharField(verbose_name='一级产品类型')
- 
+
 #     class Meta:
 #         db_table = 'industry_first_category'
 

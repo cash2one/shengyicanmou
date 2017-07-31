@@ -8,7 +8,7 @@ from models import  ListItemTrend, IndustryCategory,\
         IndustryThirdCategory, Industrys,\
         ListItem, mysql_db
 from settings import LOGGING
-from  utils import get_30_date_before_today, get_yesterday
+from  utils import get_30_date_before_today, get_lastday
 
 logging.config.dictConfig(LOGGING)
 logger = logging.getLogger('mydata')
@@ -31,7 +31,7 @@ class SycmData(object):
 
     def __init__(self):
         before_request_handler()
-    
+
     # def save_industry_category(self):
     #     '''
     #     https://sycm.taobao.com/mq/industry/product/rank.htm
@@ -43,7 +43,7 @@ class SycmData(object):
     #     ]
     #     with mysql_db.atomic():
     #         IndustryFirstCategory.insert_many(categorys).execute()
-      
+
     def save_category(self, item_list):
         # if not IndustryFirstCategory.select().count():
         #     self.save_industry_category()
@@ -63,7 +63,7 @@ class SycmData(object):
             #pdb.set_trace()
             try:
                 if second_cate_name:
-                    #此时该目录是三级目录            
+                    #此时该目录是三级目录
                     second_category, created = IndustryCategory.get_or_create(
                         second_cate_id = second_cate_id,
                         cate_id = cate_id,
@@ -98,7 +98,7 @@ class SycmData(object):
                     third_category.third_cate_name = third_cate_name
                     third_category.save()
             except Exception as e:
-                logger.error('\033[92m {} \033[0m'.format(e)) 
+                logger.error('\033[92m {} \033[0m'.format(e))
 
     def save_industrys(self, item_list):
         for item in item_list:
@@ -195,7 +195,7 @@ class SycmData(object):
                             pay_byr_rate_index = pay_byr_rate_index_list[num]
                             logger.debug('\033[96m 保存商品趋势信息: date:{0}, 所有终端-支付子订单数:{1} , 所有终端-支付转化率指数：{2} ,所有终端-支付件数:{3}\033[0m'
                                         .format(data_mapping_date,
-                                            pay_item_qty, pay_ord_cnt, 
+                                            pay_item_qty, pay_ord_cnt,
                                             pay_byr_rate_index))
                             list_item_trend, created = ListItemTrend.get_or_create(
                                     list_item = list_item,
@@ -214,7 +214,7 @@ class SycmData(object):
                 except Exception as e:
                     logger.error('\033[92m {} \033[0m'.format(e))
 
-                
+
 
 
 

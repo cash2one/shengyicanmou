@@ -19,7 +19,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 from settings import logger, HEADERS
 from pipelines import SycmData
-from utils import get_yesterday
+from utils import get_lastday
 from models import IndustryCategory, IndustryThirdCategory
 
 class Sycm(object):
@@ -31,7 +31,7 @@ class Sycm(object):
         self.session = requests.Session()
 
         self._get_login_cookies()
-        if self._check_login():            
+        if self._check_login():
             logger.debug('from cache...cookies...,login success')
             #self.crawl_industry_category()
             self.crawl_industry_info()
@@ -39,7 +39,7 @@ class Sycm(object):
             # 防止cookie过期失效
             self.session.cookies.clear()
             self.crawl_industry_category()
-           
+
 
     def _login(self, username, passwd):
         # url = 'https://sycm.taobao.com'
@@ -70,14 +70,14 @@ class Sycm(object):
         elif re.findall(r'滑块验证码', driver.page_source):
             ## 这里需要解决滑块验证的问题！！！
             logger.debug('*'*20 + '\033[92m 需进行滑块验证 \033[0m')
-        
+
         if self._check_login():
             logger.debug("login success")
         cookies = driver.get_cookies()
         login_cookies = {item["name"] : item["value"] for item in cookies}
         self._save_login_cookies(login_cookies)
         return login_cookies
-        
+
     def _save_login_cookies(self, login_cookies):
         if not isinstance(login_cookies, dict):
             logger.debug('The cookies must be dict type')
@@ -107,14 +107,13 @@ class Sycm(object):
             return True
         else:
             return False
-    
+
     def crawl_industry_category(self, driver=None):
         '''
         抓取 市场->产品分析 表格数据
         获取产品名：cate_name 和 产品ID：cate_id
         '''
-        category_url = 'https://sycm.taobao.com/mq/common/category.json?edition=2&statDate=2017-07-12'
-        
+        category_url = 'https://sycm.taobao.com/mq/common/category.json?edition=2&statDate={yesterday}'.format(yesterday=get_lastday())
         if driver:
             driver.get(category_url)
             page_source = driver.page_source
@@ -130,10 +129,10 @@ class Sycm(object):
             if info.get('code') == 5810: self._login(self.username, self.passwd)
         data = info['content']['data']  # len(data)=290
         item_list = []
-       
+
         for item in data:
             if item[1]:  #排除写入一级目录
-                if item[1] == item[-1]: 
+                if item[1] == item[-1]:
                     # 此时该目录是二级目录
                     second_cate_id = item[0]
                     second_cate_name = item[2]
@@ -157,7 +156,7 @@ class Sycm(object):
                 logger.debug('\033[95m 三级目录总:{}量 \033[0m'.format(len(item_list)))
         self.db.save_category(item_list)
         return self.crawl_industry_info()
-    
+
     def crawl_industry_info(self):
         '''
         获取二级（没有三级目录时）或三级目录下的商品详情
@@ -171,8 +170,10 @@ class Sycm(object):
             for num in range(length):
                 item_list = []
                 cate_id = cate_id_list[num].third_cate_id
-                url = 'https://sycm.taobao.com/mq/industry/product/product_rank/getRankList.json?cateId={cate_id}&dateRange={yesterday}%7C{yesterday}&dateType=recent1&device=0&seller=-1'\
-                    .format(cate_id=cate_id, yesterday=get_yesterday())
+                url = 'https://sycm.taobao.com/mq/industry/product/product_rank/getRankList.json?cateId={cate_id}&dateRange={lastday}%7C{yesterday}&dateType=recent1&device=0&seller=-1'\
+                    .format(cate_id=cate_id, lastday=get_lastday(day=7), yesterday=get_lastday())
+                #import pdb
+                #pdb.set_trace()
                 res = self.session.get(url, headers=HEADERS, verify=False)
                 info = json.loads(res.content.decode('utf-8'))
                 # import pdb
