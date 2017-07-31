@@ -177,13 +177,13 @@ class Sycm(object):
                     text = html.xpath('//script')[4].text
                     text = text.replace('\n', '').replace('\t','').replace('  ','').replace(' ','')
                     query_string = re.findall(r'data:{(.*)},', text)[0].replace("'", '')
-                    driver = self._login()
+                    #driver = self._login()
                     query_params = {}
                     for key in query_string.split(','):
                         query_params[key.split(':')[0]] = key.split(':')[1]
                     #此时有三个参数要重写：smReturn, ua, code
                     query_params['smReturn'] = url
-                    # 尝试任意给定 code (图片验证码中的任意一个)
+                    #尝试任意给定 code (图片验证码中的任意一个)
                     query_params['code'] = 'nffa'
                     query_params['ua'] = ''
                     query_url = 'https://sec.taobao.com/query.htm?' + urllib.parse.urlencode(query_params)
