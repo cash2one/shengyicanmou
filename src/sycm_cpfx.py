@@ -7,8 +7,7 @@ date: 2017-7-14
 
 import os
 import time
-import datetime
-import pprint
+import urllib
 import json
 import re
 
@@ -24,12 +23,11 @@ from models import IndustryCategory, IndustryThirdCategory
 
 class Sycm(object):
 
-    def __init__(self,  username, passwd):
+    def __init__(self, username, passwd):
         self.username = username
         self.passwd = passwd
         self.db = SycmData()
         self.session = requests.Session()
-
         self._get_login_cookies()
         if self._check_login():
             logger.debug('from cache...cookies...,login success')
@@ -38,10 +36,11 @@ class Sycm(object):
         else:
             # 防止cookie过期失效
             self.session.cookies.clear()
-            self.crawl_industry_category()
+            self._login()
+            #self.crawl_industry_category()
+            self.crawl_industry_info()
 
-
-    def _login(self, username, passwd):
+    def _login(self, callback=False):
         # url = 'https://sycm.taobao.com'
         login_url = 'https://login.taobao.com/member/login.jhtml?from=sycm&full_redirect=true&style=minisimple&minititle=&minipara=0,0,0&sub=true&redirect_url=http://sycm.taobao.com/'
         #driver = webdriver.Chrome(
@@ -59,8 +58,6 @@ class Sycm(object):
         login_button = driver.find_element_by_id("J_SubmitStatic")
         login_button.click()
         time.sleep(20)
-        #import pdb
-        #pdb.set_trace()
 
         # 如果该主机是第一次登录生意参谋，会要求进行短信验证，此时界面会触发其短信验证的弹窗：
         if re.findall(r'安全验证', driver.page_source):
@@ -76,7 +73,9 @@ class Sycm(object):
         cookies = driver.get_cookies()
         login_cookies = {item["name"] : item["value"] for item in cookies}
         self._save_login_cookies(login_cookies)
-        return login_cookies
+        if callback:
+            self.crawl_industry_category()
+        return driver
 
     def _save_login_cookies(self, login_cookies):
         if not isinstance(login_cookies, dict):
@@ -108,28 +107,23 @@ class Sycm(object):
         else:
             return False
 
-    def crawl_industry_category(self, driver=None):
+    def crawl_industry_category(self):
         '''
         抓取 市场->产品分析 表格数据
         获取产品名：cate_name 和 产品ID：cate_id
         '''
         category_url = 'https://sycm.taobao.com/mq/common/category.json?edition=2&statDate={yesterday}'.format(yesterday=get_lastday())
-        if driver:
-            driver.get(category_url)
-            page_source = driver.page_source
-        else:
-            res = self.session.get(category_url, headers=HEADERS, verify=False)
-            page_source = res.content
+        res = self.session.get(category_url, headers=HEADERS, verify=False)
+        page_source = res.content
         try:
             #import pdb
             #pdb.set_trace()
             info = json.loads(page_source)
         except Exception as e:
             info = json.loads(page_source.decode('utf-8'))
-            if info.get('code') == 5810: self._login(self.username, self.passwd)
+            if info.get('code') == 5810: self._login(callback=True)
         data = info['content']['data']  # len(data)=290
         item_list = []
-
         for item in data:
             if item[1]:  #排除写入一级目录
                 if item[1] == item[-1]:
@@ -155,9 +149,8 @@ class Sycm(object):
                 })
                 logger.debug('\033[95m 三级目录总:{}量 \033[0m'.format(len(item_list)))
         self.db.save_category(item_list)
-        return self.crawl_industry_info()
 
-    def crawl_industry_info(self):
+    def crawl_industry_info(self, driver=None):
         '''
         获取二级（没有三级目录时）或三级目录下的商品详情
         '''
@@ -170,16 +163,35 @@ class Sycm(object):
             for num in range(length):
                 item_list = []
                 cate_id = cate_id_list[num].third_cate_id
-                url = 'https://sycm.taobao.com/mq/industry/product/product_rank/getRankList.json?cateId={cate_id}&dateRange={lastday}%7C{yesterday}&dateType=recent1&device=0&seller=-1'\
+                url = 'https://sycm.taobao.com/mq/industry/product/product_rank/getRankList.json?cateId={cate_id}&dateRange={lastday}%7C{yesterday}&dateType=recent7&device=0&seller=-1'\
                     .format(cate_id=cate_id, lastday=get_lastday(day=7), yesterday=get_lastday())
-                #import pdb
-                #pdb.set_trace()
                 res = self.session.get(url, headers=HEADERS, verify=False)
-                info = json.loads(res.content.decode('utf-8'))
-                # import pdb
-                # pdb.set_trace()
+                res = json.loads(res.text)
+                if res.get('rgv587_flag0') == 'sm':
+                    import pdb
+                    pdb.set_trace()
+                    logger.debug('\033[92m 需进行图片验证 !!\033[0m')
+                    verify_url=res['url']+'&style=mini'
+                    verify_res = self.session.get(verify_url, headers=HEADERS, verify=False)
+                    html = etree.HTML(verify_res.text)
+                    text = html.xpath('//script')[4].text
+                    text = text.replace('\n', '').replace('\t','').replace('  ','').replace(' ','')
+                    query_string = re.findall(r'data:{(.*)},', text)[0].replace("'", '')
+                    driver = self._login()
+                    query_params = {}
+                    for key in query_string.split(','):
+                        query_params[key.split(':')[0]] = key.split(':')[1]
+                    #此时有三个参数要重写：smReturn, ua, code
+                    query_params['smReturn'] = url
+                    # 尝试任意给定 code (图片验证码中的任意一个)
+                    query_params['code'] = 'nffa'
+                    query_params['ua'] = ''
+                    query_url = 'https://sec.taobao.com/query.htm?' + urllib.parse.urlencode(query_params)
+                    self.session.get(query_url, headers=HEADERS, verify=False)
+                    return
+
                 try:
-                    items = info['content']['data']
+                    items = res['content']['data']
                 except Exception as e:
                     logger.error('\033[92m {}报错:{}\033[0m'.format(url, e))
                     continue

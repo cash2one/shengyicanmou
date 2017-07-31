@@ -18,7 +18,7 @@ from selenium import webdriver
 
 from settings import logger, HEADERS
 from pipelines import SycmData
-from utils import get_yesterday
+from utils import get_lastday
 
 class Sycm(object):
 
@@ -31,7 +31,7 @@ class Sycm(object):
         self.session = requests.Session()
 
         self._get_login_cookies()
-        if self._check_login():            
+        if self._check_login():
             logger.debug('from cache...cookies...,login success')
             self.crawl_list_item_trend()
         else:
@@ -62,7 +62,7 @@ class Sycm(object):
         elif re.findall(r'滑块验证码', driver.page_source):
             ## 这里需要解决滑块验证的问题！！！
             logger.debug('*'*20 + '\033[92m 需进行滑块验证 \033[0m')
-        
+
         if self._check_login():
             logger.debug("login success")
         cookies = driver.get_cookies()
@@ -70,7 +70,7 @@ class Sycm(object):
         self._save_login_cookies(login_cookies)
 
         return login_cookies
-        
+
     def _save_login_cookies(self, login_cookies):
         if not isinstance(login_cookies, dict):
             logger.debug('The cookies must be dict type')
@@ -99,10 +99,10 @@ class Sycm(object):
             return True
         else:
             return False
-          
+
     def get_list_item_total_page(self):
         list_items_url = 'https://sycm.taobao.com/mq/rank/listItems.json?cateId=122966004&categoryId=122966004&dateRange={yesterday}%7C{yesterday}&dateRangePre={yesterday}|{yesterday}&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page=1&pageSize=100&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142'\
-                .format(yesterday=get_yesterday())
+                .format(yesterday=get_lastday())
         res = self.session.get(url=list_items_url, headers=HEADERS, verify=False)
         list_items = json.loads(res.text)
         try:
@@ -125,7 +125,7 @@ class Sycm(object):
         for page in range(1, total_page+1):
             logger.debug('共{}页，开始获取第{}页数据'.format(total_page, page)+'-'*20)
             list_items_url = 'https://sycm.taobao.com/mq/rank/listItems.json?cateId=122966004&categoryId=122966004&dateRange={yesterday}%7C{yesterday}&dateRangePre={yesterday}|{yesterday}&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&itemDetailType=1&keyword=&orderDirection=desc&orderField=payOrdCnt&page={page}&pageSize=100&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=rank&_=1498206609142'\
-                            .format(yesterday=get_yesterday(), page=page)
+                            .format(yesterday=get_lastday(), page=page)
             res = self.session.get(url=list_items_url, headers=HEADERS, verify=False)
             list_items = json.loads(res.text)
             if list_items['content']['message'] == "操作成功":
@@ -148,11 +148,11 @@ class Sycm(object):
                         # 产品价格
                         item_price = item['itemPrice']
                         # 产品url
-                        item_url = 'https:' + item['itemUrl'] 
+                        item_url = 'https:' + item['itemUrl']
 
                         # 构造 商品趋势的折线图 的URL
                         item_trend_url = 'https://sycm.taobao.com/mq/rank/listItemTrend.json?cateId=122966004&categoryId=122966004&dateRange={yesterday}%7C{yesterday}&dateRangePre={yesterday}|{yesterday}&dateType=recent1&dateTypePre=recent1&device=0&devicePre=0&indexes=payOrdCnt,payByrRateIndex,payItemQty&itemDetailType=1&itemId={item_id}&latitude=undefined&rankTabIndex=0&rankType=1&seller=-1&token=aa970f317&view=detail'\
-                                        .format(yesterday=get_yesterday(), item_id=item_id)
+                                        .format(yesterday=get_lastday(), item_id=item_id)
                         trend_res = self.session.get(url=item_trend_url, headers=HEADERS, verify=False)
                         trend_items = json.loads(trend_res.text)
                         if trend_items['content']['message'] == "操作成功":
