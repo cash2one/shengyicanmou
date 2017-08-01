@@ -172,22 +172,49 @@ class Sycm(object):
                     pdb.set_trace()
                     logger.debug('\033[92m 需进行图片验证 !!\033[0m')
                     verify_url=res['url']+'&style=mini'
+
+                    #先采取方法二试试：
                     verify_res = self.session.get(verify_url, headers=HEADERS, verify=False)
                     html = etree.HTML(verify_res.text)
                     text = html.xpath('//script')[4].text
                     text = text.replace('\n', '').replace('\t','').replace('  ','').replace(' ','')
+                    ##获取验证码
+                    sessionid = re.findall(r"sessionid:'(\w+)'", text)[0]
+                    identity = re.findall(r"identity:'([\w-]+)',", text)[0]
+                    type = re.findall(r"type:'([\d\w_]+)'", text)[0]
+                    img_url = 'http://pin.aliyun.com/get_img?identity={}&sessionid={}&type={}&t={}'.format(identity, sessionid, type, int(time.time()*1000))
+                    import shutil
+                    img_res = requests.get(img_url, stream=True)
+                    if img_res.status_code == 200:
+                        with open('code.jpeg', 'wb') as ff:
+                            img_res.raw.decode_content = True
+                            shutil.copyfileobj(img_res.raw, ff) 
+                    ##构造 验证码check URL
+                    code = input('please input code:')
+                    import random
+                    random_num = random.randint(100, 999)
+                    ksTS = str(int(time.time()*1000)) + '_{}'.format(random_num)
+                    callback = random_num+1
+                    check_url = 'https://pin.aliyun.com/check_img?code={code}&_ksTS={ksTS}&callback=jsonp{callback}&identity={identity}&sessionid={sessionid}&delflag=0&type=default&isg=Aqys_N0n2QH8-80hbwtuRBDNfYpydE4BImBZ5Abr69f6EUMbA3Von_jnR-9S'\
+                            .format(code=code, ksTS=ksTS, callback=callback, identity=identity, sessionid=sessionid)
+                    check_res = self.session.get(check_url, headers=HEADERS, verify=False)
+                    if re.findall(r'"message":"(.+)"', check_res.text)[0] == 'SUCCESS.':
+                        logger.debug('验证码验证成功！')
+                    ##构造查询函数 query URL
                     query_string = re.findall(r'data:{(.*)},', text)[0].replace("'", '')
-                    #driver = self._login()
+                    ###driver = self._login()
                     query_params = {}
                     for key in query_string.split(','):
                         query_params[key.split(':')[0]] = key.split(':')[1]
-                    #此时有三个参数要重写：smReturn, ua, code
+                    ###此时有三个参数要重写：smReturn, ua, code
                     query_params['smReturn'] = url
-                    #尝试任意给定 code (图片验证码中的任意一个)
-                    query_params['code'] = 'nffa'
-                    query_params['ua'] = ''
+                    ###尝试任意给定 code (图片验证码中的任意一个)
+                    query_params['code'] = '230752'
+                    query_params['ua'] = 'sssaass'
                     query_url = 'https://sec.taobao.com/query.htm?' + urllib.parse.urlencode(query_params)
-                    self.session.get(query_url, headers=HEADERS, verify=False)
+                    query_res = self.session.get(query_url, headers=HEADERS, verify=False)
+                    final_url = re.findall(r'"url":"(https://.*)"', query_res.text, re.I)
+                    logger.debug('\033[96m final request url:{}'.format(final_url))
                     return
 
                 try:
