@@ -110,7 +110,7 @@ class SycmData(object):
             brand_id = item['brand_id']
             brand_name = item['brand_name']
             rank_id = item['rank_id']
-            update_time = datetime.date.today()
+            update_time = datetime.date.today() - datetime.timedelta(1)
             logger.debug('\033[96m 保存产品分析的详情: 产品名:{0} \033[0m'.format(model_name))
             try:
                 third_category = IndustryThirdCategory.get(third_cate_id=third_cate_id)
