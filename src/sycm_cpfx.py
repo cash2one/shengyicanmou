@@ -161,8 +161,6 @@ class Sycm(object):
         length = cate_id_list.count()
         try:
             for num in range(length):
-                import pdb
-                pdb.set_trace()
                 item_list = []
                 cate_id = cate_id_list[num].third_cate_id
                 url = 'https://sycm.taobao.com/mq/industry/product/product_rank/getRankList.json?cateId={cate_id}&dateRange={lastday}%7C{yesterday}&dateType=recent7&device=0&seller=-1'\
@@ -172,7 +170,6 @@ class Sycm(object):
                 if res.get('rgv587_flag0') == 'sm':
                     logger.debug('\033[92m 需进行图片验证 !!\033[0m')
                     verify_url=res['url']+'&style=mini'
-
                     #先采取方法二试试：
                     verify_res = self.session.get(verify_url, headers=HEADERS, verify=False)
                     html = etree.HTML(verify_res.text)
@@ -181,8 +178,8 @@ class Sycm(object):
                     ##获取验证码
                     sessionid = re.findall(r"sessionid:'(\w+)'", text)[0]
                     identity = re.findall(r"identity:'([\w-]+)',", text)[0]
-                    type = re.findall(r"type:'([\d\w_]+)'", text)[0]
-                    img_url = 'http://pin.aliyun.com/get_img?identity={}&sessionid={}&type={}&t={}'.format(identity, sessionid, type, int(time.time()*1000))
+                    type_text = re.findall(r"type:'([\d\w_]+)'", text)[0]
+                    img_url = 'http://pin.aliyun.com/get_img?identity={}&sessionid={}&type={}&t={}'.format(identity, sessionid, type_text, int(time.time()*1000))
                     import shutil
                     img_res = requests.get(img_url, stream=True)
                     if img_res.status_code == 200:
@@ -200,7 +197,7 @@ class Sycm(object):
                             .format(code=code, ksTS=ksTS, callback=callback, identity=identity, sessionid=sessionid)
                     check_res = self.session.get(check_url, headers=HEADERS, verify=False)
                     if re.findall(r'"message":"(.+)"', check_res.text)[0] == 'SUCCESS.':
-                        logger.debug('验证码验证成功！')
+                        logger.debug('\033[95m 验证码验证成功！\033[0m')
                     ##构造查询函数 query URL
                     query_string = re.findall(r'data:{(.*)},', text)[0].replace("'", '')
                     ###driver = self._login()
@@ -215,9 +212,9 @@ class Sycm(object):
                     query_params['ua'] = 'sssaass'
                     query_url = 'https://sec.taobao.com/query.htm?' + urllib.parse.urlencode(query_params)
                     query_res = self.session.get(query_url, headers=HEADERS, verify=False)
-                    logger.debug('\033[96m query text :{}'.format(query_res.text))
+                    logger.debug('\033[96m query text :{} \033[0m'.format(query_res.text))
                     final_url = re.findall(r'"url":"(https://.*)",', query_res.text, re.I)[0]
-                    logger.debug('\033[96m final request url:{}'.format(final_url))
+                    logger.debug('\033[96m final request url:{} \033[0m'.format(final_url))
                     final_res = self.session.get(final_url, headers=HEADERS, verify=False)
                     res = json.loads(final_res.text)                
                 try:
