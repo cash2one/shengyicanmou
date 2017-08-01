@@ -105,3 +105,4 @@ ENV/
 .*.py.sw*
 *.*~
 .*.*.swp
+code_img/

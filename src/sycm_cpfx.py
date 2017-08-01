@@ -4,11 +4,12 @@
 该脚本只针对 生意参谋-》市场-》产品分析(所有商品作三级目录分类，全部爬取)
 date: 2017-7-14
 '''
-
-import os
 import time
+import shutil
 import urllib
 import json
+import random
+import string
 import re
 
 from lxml import etree
@@ -154,9 +155,6 @@ class Sycm(object):
         '''
         获取二级（没有三级目录时）或三级目录下的商品详情
         '''
-        #获取没有三级目录的二级目录的cate_id
-        # second_categorys = IndustryCategory.raw('select cate_id from industry_category where count_third >0')
-        # second_cate_ids = IndustryCategory.select(IndustryCategory.cate_id).where(IndustryCategory.count_third >0)
         cate_id_list = IndustryThirdCategory.select(IndustryThirdCategory.third_cate_id)
         length = cate_id_list.count()
         try:
@@ -180,16 +178,14 @@ class Sycm(object):
                     identity = re.findall(r"identity:'([\w-]+)',", text)[0]
                     type_text = re.findall(r"type:'([\d\w_]+)'", text)[0]
                     img_url = 'http://pin.aliyun.com/get_img?identity={}&sessionid={}&type={}&t={}'.format(identity, sessionid, type_text, int(time.time()*1000))
-                    import shutil
                     img_res = requests.get(img_url, stream=True)
                     if img_res.status_code == 200:
                         code_path = 'code_img/code_{}.jpeg'.format(int(time.time()*1000))
                         with open(code_path, 'wb') as ff:
                             img_res.raw.decode_content = True
-                            shutil.copyfileobj(img_res.raw, ff) 
+                            shutil.copyfileobj(img_res.raw, ff)
                     ##构造 验证码check URL
                     code = input('please input code:')
-                    import random
                     random_num = random.randint(100, 999)
                     ksTS = str(int(time.time()*1000)) + '_{}'.format(random_num)
                     callback = random_num+1
@@ -197,26 +193,25 @@ class Sycm(object):
                             .format(code=code, ksTS=ksTS, callback=callback, identity=identity, sessionid=sessionid)
                     check_res = self.session.get(check_url, headers=HEADERS, verify=False)
                     if re.findall(r'"message":"(.+)"', check_res.text)[0] == 'SUCCESS.':
-                        logger.debug('\033[95m 验证码验证成功！\033[0m')
+                        logger.debug('\033[92m 验证码验证成功！\033[0m')
                     ##构造查询函数 query URL
                     query_string = re.findall(r'data:{(.*)},', text)[0].replace("'", '')
-                    ###driver = self._login()
                     query_params = {}
                     for key in query_string.split(','):
                         query_params[key.split(':')[0]] = key.split(':')[1]
                     ###此时有三个参数要重写：smReturn, ua, code
+                    ###表示ua参数不重要, 故用python随意生成
+                    ua = ''.join(random.sample(string.ascii_letters + string.digits, 8))
                     query_params['smReturn'] = url
-                    # import pdb
-                    # pdb.set_trace()
                     query_params['code'] = code
-                    query_params['ua'] = 'sssaass'
+                    query_params['ua'] = ua
                     query_url = 'https://sec.taobao.com/query.htm?' + urllib.parse.urlencode(query_params)
                     query_res = self.session.get(query_url, headers=HEADERS, verify=False)
-                    logger.debug('\033[96m query text :{} \033[0m'.format(query_res.text))
+                    logger.debug('\033[94m query text :{} \033[0m'.format(query_res.text))
                     final_url = re.findall(r'"url":"(https://.*)",', query_res.text, re.I)[0]
-                    logger.debug('\033[96m final request url:{} \033[0m'.format(final_url))
+                    logger.debug('\033[94m final request url:{} \033[0m'.format(final_url))
                     final_res = self.session.get(final_url, headers=HEADERS, verify=False)
-                    res = json.loads(final_res.text)                
+                    res = json.loads(final_res.text)
                 try:
                     items = res['content']['data']
                 except Exception as e:
