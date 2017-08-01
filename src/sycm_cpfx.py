@@ -161,6 +161,8 @@ class Sycm(object):
         length = cate_id_list.count()
         try:
             for num in range(length):
+                import pdb
+                pdb.set_trace()
                 item_list = []
                 cate_id = cate_id_list[num].third_cate_id
                 url = 'https://sycm.taobao.com/mq/industry/product/product_rank/getRankList.json?cateId={cate_id}&dateRange={lastday}%7C{yesterday}&dateType=recent7&device=0&seller=-1'\
@@ -168,8 +170,6 @@ class Sycm(object):
                 res = self.session.get(url, headers=HEADERS, verify=False)
                 res = json.loads(res.text)
                 if res.get('rgv587_flag0') == 'sm':
-                    import pdb
-                    pdb.set_trace()
                     logger.debug('\033[92m 需进行图片验证 !!\033[0m')
                     verify_url=res['url']+'&style=mini'
 
@@ -186,7 +186,8 @@ class Sycm(object):
                     import shutil
                     img_res = requests.get(img_url, stream=True)
                     if img_res.status_code == 200:
-                        with open('code.jpeg', 'wb') as ff:
+                        code_path = 'code_img/code_{}.jpeg'.format(int(time.time()*1000))
+                        with open(code_path, 'wb') as ff:
                             img_res.raw.decode_content = True
                             shutil.copyfileobj(img_res.raw, ff) 
                     ##构造 验证码check URL
@@ -208,15 +209,17 @@ class Sycm(object):
                         query_params[key.split(':')[0]] = key.split(':')[1]
                     ###此时有三个参数要重写：smReturn, ua, code
                     query_params['smReturn'] = url
-                    ###尝试任意给定 code (图片验证码中的任意一个)
-                    query_params['code'] = '230752'
+                    # import pdb
+                    # pdb.set_trace()
+                    query_params['code'] = code
                     query_params['ua'] = 'sssaass'
                     query_url = 'https://sec.taobao.com/query.htm?' + urllib.parse.urlencode(query_params)
                     query_res = self.session.get(query_url, headers=HEADERS, verify=False)
-                    final_url = re.findall(r'"url":"(https://.*)"', query_res.text, re.I)
+                    logger.debug('\033[96m query text :{}'.format(query_res.text))
+                    final_url = re.findall(r'"url":"(https://.*)",', query_res.text, re.I)[0]
                     logger.debug('\033[96m final request url:{}'.format(final_url))
-                    return
-
+                    final_res = self.session.get(final_url, headers=HEADERS, verify=False)
+                    res = json.loads(final_res.text)                
                 try:
                     items = res['content']['data']
                 except Exception as e:
